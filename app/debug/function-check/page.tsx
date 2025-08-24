@@ -179,11 +179,17 @@ export default function FunctionCheck() {
         <div className="bg-gray-800 p-6 rounded">
           <h3 className="text-xl font-bold mb-3">🌐 浏览器信息</h3>
           <div className="text-sm text-gray-300 space-y-1">
-            <div>用户代理: {navigator.userAgent}</div>
-            <div>语言: {navigator.language}</div>
-            <div>在线状态: {navigator.onLine ? '✅ 在线' : '❌ 离线'}</div>
-            <div>JavaScript 启用: ✅ 是</div>
-            <div>本地存储: {typeof localStorage !== 'undefined' ? '✅ 可用' : '❌ 不可用'}</div>
+            {typeof window !== 'undefined' && navigator ? (
+              <>
+                <div>用户代理: {navigator.userAgent}</div>
+                <div>语言: {navigator.language}</div>
+                <div>在线状态: {navigator.onLine ? '✅ 在线' : '❌ 离线'}</div>
+                <div>JavaScript 启用: ✅ 是</div>
+                <div>本地存储: {typeof localStorage !== 'undefined' ? '✅ 可用' : '❌ 不可用'}</div>
+              </>
+            ) : (
+              <div>⏳ 正在加载浏览器信息...</div>
+            )}
           </div>
         </div>
 

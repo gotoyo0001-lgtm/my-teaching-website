@@ -62,29 +62,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isCatalyst = role === 'catalyst';
   const isGuardian = role === 'guardian';
   
-  // 添加调试日志
-  console.log('🎯 当前认证状态:', { 
-    hasUser: !!user, 
-    hasProfile: !!profile, 
-    role, 
-    isGuardian,
-    userEmail: user?.email 
-  });
+  // 添加调试日志（只在客户端环境下）
+  if (typeof window !== 'undefined') {
+    console.log('🎯 当前认证状态:', { 
+      hasUser: !!user, 
+      hasProfile: !!profile, 
+      role, 
+      isGuardian,
+      userEmail: user?.email 
+    });
+  }
 
   // 获取用户档案
   const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
-      console.log('🔍 正在获取用户档案, userId:', userId);
+      if (typeof window !== 'undefined') {
+        console.log('🔍 正在获取用户档案, userId:', userId);
+      }
       const { data, error } = await safeQueries.getUserProfile(userId);
       if (error) {
-        console.error('❌ 获取用户档案失败:', error);
+        if (typeof window !== 'undefined') {
+          console.error('❌ 获取用户档案失败:', error);
+        }
         return null;
       }
-      console.log('✅ 用户档案获取成功:', data);
+      if (typeof window !== 'undefined') {
+        console.log('✅ 用户档案获取成功:', data);
+      }
       // 类型断言，确保数据符合 UserProfile 类型
       return data ? (data as unknown as UserProfile) : null;
     } catch (error) {
-      console.error('❌ 获取用户档案时发生错误:', error);
+      if (typeof window !== 'undefined') {
+        console.error('❌ 获取用户档案时发生错误:', error);
+      }
       return null;
     }
   };
@@ -278,7 +288,10 @@ export function usePermissions() {
     canNominateCatalyst: isLuminary || isGuardian,
   };
   
-  console.log('🔐 权限检查结果:', { role, isGuardian, permissions });
+  // 添加调试信息（只在客户端环境下）
+  if (typeof window !== 'undefined') {
+    console.log('🔐 权限检查结果:', { role, isGuardian, permissions });
+  }
   
   return permissions;
 }
