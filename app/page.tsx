@@ -23,9 +23,16 @@ export default function HomePage() {
 
   if (!mounted || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="cosmic-loading"></div>
-        <span className="ml-3 text-cosmic-light">正在连接宇宙...</span>
+      <div className="min-h-screen flex items-center justify-center bg-cosmic-void">
+        <div className="text-center">
+          {/* 优化的加载动画 */}
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <div className="absolute inset-0 rounded-full border-4 border-cosmic-accent/20"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-cosmic-accent animate-spin"></div>
+            <div className="absolute inset-2 rounded-full border-2 border-cosmic-energy/30 animate-pulse"></div>
+          </div>
+          <span className="text-cosmic-light animate-pulse">正在连接宇宙...</span>
+        </div>
       </div>
     );
   }
@@ -41,17 +48,17 @@ export default function HomePage() {
         <div className="absolute top-20 left-1/4 w-96 h-96 bg-cosmic-energy/5 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute bottom-20 right-1/4 w-80 h-80 bg-cosmic-warm/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
         
-        {/* 星星效果 */}
+        {/* 优化的星星效果 - 减少DOM元素数量 */}
         <div className="absolute inset-0">
-          {[...Array(50)].map((_, i) => (
+          {[...Array(15)].map((_, i) => (
             <div
               key={i}
-              className="absolute w-1 h-1 bg-cosmic-star rounded-full opacity-30"
+              className="absolute w-1 h-1 bg-cosmic-star rounded-full opacity-30 animate-pulse"
               style={{
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
                 animationDelay: `${Math.random() * 3}s`,
-                animation: `star-twinkle 3s infinite`,
+                animationDuration: `${2 + Math.random() * 2}s`,
               }}
             />
           ))}

@@ -4,9 +4,9 @@
 // 管理用户状态、原型角色和宇宙中的身份
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase, supabaseQueries } from './supabaseClient';
-import type { ArchetypeRole, Database } from './database.types';
+import { User, Session, AuthError } from '@supabase/supabase-js';
+import { supabaseSafe, safeAuth, safeQueries, safeDb } from './supabase-safe';
+import type { ArchetypeRole } from './database.types';
 
 interface UserProfile {
   id: string;
@@ -40,10 +40,10 @@ interface AuthContextType {
   isGuardian: boolean;
   
   // 认证操作
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, username: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: AuthError | Error | null }>;
+  signUp: (email: string, password: string, username: string) => Promise<{ error: AuthError | Error | null }>;
   signOut: () => Promise<void>;
-  updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: any }>;
+  updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: AuthError | Error | null }>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -63,14 +63,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isGuardian = role === 'guardian';
 
   // 获取用户档案
-  const fetchUserProfile = async (userId: string) => {
+  const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
-      const { data, error } = await supabaseQueries.getUserProfile(userId);
+      const { data, error } = await safeQueries.getUserProfile(userId);
       if (error) {
         console.error('获取用户档案失败:', error);
         return null;
       }
-      return data;
+      // 类型断言，确保数据符合 UserProfile 类型
+      return data ? (data as unknown as UserProfile) : null;
     } catch (error) {
       console.error('获取用户档案时发生错误:', error);
       return null;
@@ -86,78 +87,82 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // 登录
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+  const signIn = async (email: string, password: string): Promise<{ error: AuthError | Error | null }> => {
+    try {
+      const { error } = await safeAuth.signIn(email, password);
+      return { error };
+    } catch (err) {
+      console.error('登录时发生错误:', err);
+      return { error: err as Error };
+    }
   };
 
   // 注册
-  const signUp = async (email: string, password: string, username: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+  const signUp = async (email: string, password: string, username: string): Promise<{ error: AuthError | Error | null }> => {
+    try {
+      const { data, error } = await safeAuth.signUp(email, password);
 
-    if (error) return { error };
+      if (error) return { error };
 
-    // 如果注册成功，创建用户档案
-    if (data.user) {
-      const profileData: Database['public']['Tables']['profiles']['Insert'] = {
-        id: data.user.id,
-        username,
-        role: 'voyager', // 默认角色为遥行者
-      };
-      
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert(profileData);
+      // 如果注册成功，创建用户档案
+      if (data.user) {
+        const profileData = {
+          id: data.user.id,
+          username,
+          role: 'voyager' as const, // 默认角色为遥行者
+        };
+        
+        const { error: profileError } = await safeDb.profiles.insert(profileData);
 
-      if (profileError) {
-        console.error('创建用户档案失败:', profileError);
-        return { error: profileError };
+        if (profileError) {
+          console.error('创建用户档案失败:', profileError);
+          return { error: new Error(`创建用户档案失败: ${profileError.message}`) };
+        }
       }
-    }
 
-    return { error: null };
+      return { error: null };
+    } catch (err) {
+      console.error('注册时发生错误:', err);
+      return { error: err as Error };
+    }
   };
 
   // 登出
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await safeAuth.signOut();
     setUser(null);
     setSession(null);
     setProfile(null);
   };
 
   // 更新档案
-  const updateProfile = async (updates: Partial<UserProfile>) => {
+  const updateProfile = async (updates: Partial<UserProfile>): Promise<{ error: AuthError | Error | null }> => {
     if (!user) return { error: new Error('用户未登录') };
 
-    const updateData: Database['public']['Tables']['profiles']['Update'] = {
-      ...updates,
-      updated_at: new Date().toISOString(),
-    };
+    try {
+      const updateData = {
+        ...updates,
+        updated_at: new Date().toISOString(),
+      };
 
-    const { error } = await supabase
-      .from('profiles')
-      .update(updateData)
-      .eq('id', user.id);
+      const { error } = await safeDb.profiles.update(user.id, updateData);
 
-    if (!error) {
-      await refreshProfile();
+      if (!error) {
+        await refreshProfile();
+      }
+
+      return { error };
+    } catch (err) {
+      console.error('更新档案时发生错误:', err);
+      return { error: err as Error };
     }
-
-    return { error };
   };
 
   // 监听认证状态变化
   useEffect(() => {
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = safeAuth.onAuthStateChange(async (event, session) => {
       setSession(session);
       setUser(session?.user || null);
 
@@ -168,14 +173,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // 更新最后访问时间
         if (profileData) {
-          const updateData: Database['public']['Tables']['profiles']['Update'] = {
+          const updateData = {
             last_seen_at: new Date().toISOString()
           };
           
-          await supabase
-            .from('profiles')
-            .update(updateData)
-            .eq('id', session.user.id);
+          await safeDb.profiles.update(session.user.id, updateData);
         }
       } else {
         // 用户登出
@@ -191,7 +193,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 初始化时获取当前会话
   useEffect(() => {
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await safeAuth.getSession();
       setSession(session);
       setUser(session?.user || null);
 

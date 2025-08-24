@@ -155,11 +155,43 @@ BEGIN
 END $$;
 
 -- 創建 oracles 管理策略（只有守護者可以管理）
+-- 分別為 INSERT, UPDATE, DELETE 創建策略
 DO $$ 
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'oracles' AND policyname = 'oracles_manage_policy') THEN
-        CREATE POLICY "oracles_manage_policy" ON oracles
-            FOR ALL USING (
+    -- INSERT 策略
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'oracles' AND policyname = 'oracles_insert_policy') THEN
+        CREATE POLICY "oracles_insert_policy" ON oracles
+            FOR INSERT WITH CHECK (
+                EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = auth.uid() 
+                    AND role = 'guardian'
+                )
+            );
+    END IF;
+    
+    -- UPDATE 策略
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'oracles' AND policyname = 'oracles_update_policy') THEN
+        CREATE POLICY "oracles_update_policy" ON oracles
+            FOR UPDATE USING (
+                EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = auth.uid() 
+                    AND role = 'guardian'
+                )
+            ) WITH CHECK (
+                EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = auth.uid() 
+                    AND role = 'guardian'
+                )
+            );
+    END IF;
+    
+    -- DELETE 策略
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'oracles' AND policyname = 'oracles_delete_policy') THEN
+        CREATE POLICY "oracles_delete_policy" ON oracles
+            FOR DELETE USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
                     WHERE id = auth.uid() 
@@ -182,11 +214,43 @@ BEGIN
 END $$;
 
 -- 創建 categories 管理策略（只有守護者可以管理）
+-- 分別為 INSERT, UPDATE, DELETE 創建策略
 DO $$ 
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'categories' AND policyname = 'categories_manage_policy') THEN
-        CREATE POLICY "categories_manage_policy" ON categories
-            FOR INSERT, UPDATE, DELETE USING (
+    -- INSERT 策略
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'categories' AND policyname = 'categories_insert_policy') THEN
+        CREATE POLICY "categories_insert_policy" ON categories
+            FOR INSERT WITH CHECK (
+                EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = auth.uid() 
+                    AND role = 'guardian'
+                )
+            );
+    END IF;
+    
+    -- UPDATE 策略
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'categories' AND policyname = 'categories_update_policy') THEN
+        CREATE POLICY "categories_update_policy" ON categories
+            FOR UPDATE USING (
+                EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = auth.uid() 
+                    AND role = 'guardian'
+                )
+            ) WITH CHECK (
+                EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = auth.uid() 
+                    AND role = 'guardian'
+                )
+            );
+    END IF;
+    
+    -- DELETE 策略
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'categories' AND policyname = 'categories_delete_policy') THEN
+        CREATE POLICY "categories_delete_policy" ON categories
+            FOR DELETE USING (
                 EXISTS (
                     SELECT 1 FROM profiles 
                     WHERE id = auth.uid() 

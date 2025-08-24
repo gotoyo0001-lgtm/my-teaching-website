@@ -3,9 +3,21 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from './database.types';
 
 // 客户端 Supabase 实例（用于客户端组件）
+// 优化配置以提高性能和减少不必要的警告
 export const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+    },
+    global: {
+      headers: {
+        'X-Client-Info': 'voyager-universe@1.0.0',
+      },
+    },
+  }
 );
 
 // 常用的数据库查询工具函数（客户端）
@@ -15,7 +27,7 @@ export const supabaseQueries = {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', userId)
+      .eq('id', userId as any)
       .single();
     
     return { data, error };
@@ -26,10 +38,10 @@ export const supabaseQueries = {
     const { data, error } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', userId)
+      .eq('id', userId as any)
       .single();
     
-    return { data: data?.role as Database['public']['Tables']['profiles']['Row']['role'] | undefined, error };
+    return { data: data?.role, error };
   },
 
   // 获取已发布的课程列表
@@ -44,7 +56,7 @@ export const supabaseQueries = {
           avatar_url
         )
       `)
-      .eq('status', 'published')
+      .eq('status', 'published' as any)
       .order('created_at', { ascending: false });
     
     return { data, error };
@@ -68,7 +80,7 @@ export const supabaseQueries = {
           )
         )
       `)
-      .eq('user_id', userId)
+      .eq('user_id', userId as any)
       .order('last_accessed_at', { ascending: false });
     
     return { data, error };
@@ -94,7 +106,7 @@ export const supabaseQueries = {
           estimated_duration
         )
       `)
-      .eq('id', courseId)
+      .eq('id', courseId as any)
       .single();
     
     return { data, error };
