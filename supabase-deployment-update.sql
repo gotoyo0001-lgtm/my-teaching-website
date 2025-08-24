@@ -73,7 +73,10 @@ CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON activity_logs(created
 CREATE INDEX IF NOT EXISTS idx_activity_logs_user_id ON activity_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_activity_logs_action_type ON activity_logs(action_type);
 
-RAISE NOTICE '✅ 观星台表结构创建完成';
+DO $$
+BEGIN
+    RAISE NOTICE '✅ 观星台表结构创建完成';
+END $$;
 
 -- =====================================================
 -- 第三步：清理并重新创建 RLS 策略
@@ -120,7 +123,10 @@ CREATE POLICY "guardians_can_update_system_metrics" ON system_metrics
         )
     );
 
-RAISE NOTICE '✅ RLS 策略创建完成';
+DO $$
+BEGIN
+    RAISE NOTICE '✅ RLS 策略创建完成';
+END $$;
 
 -- =====================================================
 -- 第四步：创建或更新核心函数
@@ -246,7 +252,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-RAISE NOTICE '✅ 核心函数创建完成';
+DO $$
+BEGIN
+    RAISE NOTICE '✅ 核心函数创建完成';
+END $$;
 
 -- =====================================================
 -- 第五步：创建触发器
@@ -292,7 +301,10 @@ CREATE TRIGGER trigger_log_user_activity
     FOR EACH ROW
     EXECUTE FUNCTION log_user_activity();
 
-RAISE NOTICE '✅ 触发器创建完成';
+DO $$
+BEGIN
+    RAISE NOTICE '✅ 触发器创建完成';
+END $$;
 
 -- =====================================================
 -- 第六步：插入基础数据
