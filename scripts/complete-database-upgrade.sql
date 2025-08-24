@@ -25,6 +25,11 @@ DROP POLICY IF EXISTS "用户可以更新自己的档案" ON profiles;
 DROP POLICY IF EXISTS "用户可以插入自己的档案" ON profiles;
 DROP POLICY IF EXISTS "enable_read_access_for_all" ON profiles;
 DROP POLICY IF EXISTS "allow_all_operations" ON profiles;
+-- 删除可能已存在的新策略名称
+DROP POLICY IF EXISTS "profiles_select_policy" ON profiles;
+DROP POLICY IF EXISTS "profiles_insert_policy" ON profiles;
+DROP POLICY IF EXISTS "profiles_update_policy" ON profiles;
+DROP POLICY IF EXISTS "profiles_delete_policy" ON profiles;
 
 -- 确保 RLS 已启用
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -118,6 +123,18 @@ ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 -- =====================================================
 -- 第四阶段：创建守护者功能的 RLS 策略
 -- =====================================================
+
+-- 先清理可能存在的 oracles 表策略
+DROP POLICY IF EXISTS "oracles_select_policy" ON oracles;
+DROP POLICY IF EXISTS "oracles_insert_policy" ON oracles;
+DROP POLICY IF EXISTS "oracles_update_policy" ON oracles;
+DROP POLICY IF EXISTS "oracles_delete_policy" ON oracles;
+
+-- 先清理可能存在的 categories 表策略
+DROP POLICY IF EXISTS "categories_select_policy" ON categories;
+DROP POLICY IF EXISTS "categories_insert_policy" ON categories;
+DROP POLICY IF EXISTS "categories_update_policy" ON categories;
+DROP POLICY IF EXISTS "categories_delete_policy" ON categories;
 
 -- oracles 表策略
 CREATE POLICY "oracles_select_policy" ON oracles
