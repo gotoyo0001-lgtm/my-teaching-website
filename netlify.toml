@@ -6,11 +6,15 @@
   # 建置命令
   command = "npm run build"
   
-  # 輸出目錄 (Next.js 預設)
-  publish = ".next"
+  # Next.js 插件會自動處理輸出目錄
+  # publish = ".next"  # 移除此行，讓插件自動處理
   
   # 建置環境
-  environment = { NODE_VERSION = "18" }
+  environment = { NODE_VERSION = "18", NODE_ENV = "production" }
+
+# Next.js 插件配置
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
 
 [build.processing]
   # 自動優化
@@ -35,15 +39,8 @@
   compress = true
 
 # =====================================================
-# 重定向規則 (SPA 路由支持)
+# 重定向規則 (Next.js App Router 支持)
 # =====================================================
-
-[[redirects]]
-  # 處理客戶端路由
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  conditions = { Role = ["admin", "editor"] }
 
 [[redirects]]
   # API 代理到 Supabase
@@ -57,6 +54,8 @@
   from = "/auth/callback"
   to = "/auth/callback"
   status = 200
+
+# Next.js 插件會自動處理客戶端路由，移除錯誤的重定向
 
 # =====================================================
 # Headers 安全配置
