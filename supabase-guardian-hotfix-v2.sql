@@ -234,9 +234,45 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- 创建用户活动触发器函数
+CREATE OR REPLACE FUNCTION log_user_activity()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        -- 新用户注册
+        PERFORM log_activity(
+            NEW.id,
+            'user_register',
+            '新用户注册: ' || COALESCE(NEW.display_name, NEW.username, '匿名用户'),
+            jsonb_build_object('user_id', NEW.id, 'username', NEW.username)
+        );
+        RETURN NEW;
+    ELSIF TG_OP = 'UPDATE' THEN
+        -- 用户档案更新
+        IF OLD.last_seen_at IS DISTINCT FROM NEW.last_seen_at THEN
+            PERFORM log_activity(
+                NEW.id,
+                'user_activity',
+                '用户活动: ' || COALESCE(NEW.display_name, NEW.username, '匿名用户'),
+                jsonb_build_object('user_id', NEW.id, 'action', 'visit')
+            );
+        END IF;
+        RETURN NEW;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 创建触发器
+DROP TRIGGER IF EXISTS trigger_log_user_activity ON profiles;
+CREATE TRIGGER trigger_log_user_activity
+    AFTER INSERT OR UPDATE ON profiles
+    FOR EACH ROW
+    EXECUTE FUNCTION log_user_activity();
+
 DO $$
 BEGIN
-    RAISE NOTICE '✅ 核心函数创建完成';
+    RAISE NOTICE '✅ 核心函数和触发器创建完成';
 END $$;
 
 -- =====================================================
