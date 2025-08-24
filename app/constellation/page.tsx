@@ -159,7 +159,7 @@ export default function ConstellationPage() {
               </Link>
               <Link 
                 href="/my-constellation" 
-                className="text-cosmic-light hover:text-cosmic-accent transition-colors"
+                className="text-cosmic-light hover:text-cosmic-accent transition-colors cursor-pointer"
               >
                 我的星座
               </Link>

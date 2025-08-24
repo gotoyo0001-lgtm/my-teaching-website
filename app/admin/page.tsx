@@ -119,6 +119,14 @@ export default function AdminDashboard() {
       stats: '企業級安全保護'
     },
     {
+      title: '观星台',
+      description: '监控系统整体状态和实时活动日志',
+      icon: '🔭',
+      href: '/admin/observatory',
+      permission: true,
+      stats: '系统全景监控'
+    },
+    {
       title: '守護者測試工具',
       description: '完整的功能驗證和診斷工具',
       icon: '🧪',

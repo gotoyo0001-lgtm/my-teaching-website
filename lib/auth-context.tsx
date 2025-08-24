@@ -291,6 +291,7 @@ export function usePermissions() {
   // 添加调试信息（只在客户端环境下）
   if (typeof window !== 'undefined') {
     console.log('🔐 权限检查结果:', { role, isGuardian, permissions });
+    console.log('👤 用户状态:', { hasProfile: !!profile, role: profile?.role, userId: profile?.id });
   }
   
   return permissions;

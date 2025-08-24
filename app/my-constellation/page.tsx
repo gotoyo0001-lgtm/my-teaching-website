@@ -64,10 +64,10 @@ export default function MyConstellationPage() {
 
         // 计算统计数据
         const totalEnrollments = enrollmentData?.length || 0;
-        const completedCourses = enrollmentData?.filter(e => e.status === 'completed').length || 0;
-        const totalProgress = enrollmentData?.reduce((sum, e) => sum + (e.progress_percentage || 0), 0) || 0;
+        const completedCourses = enrollmentData?.filter((e: any) => e.status === 'completed').length || 0;
+        const totalProgress = enrollmentData?.reduce((sum: number, e: any) => sum + (e.progress_percentage || 0), 0) || 0;
         const averageProgress = totalEnrollments > 0 ? Math.round(totalProgress / totalEnrollments) : 0;
-        const totalStudyTime = enrollmentData?.reduce((sum, e) => {
+        const totalStudyTime = enrollmentData?.reduce((sum: number, e: any) => {
           const duration = e.course?.estimated_duration || 0;
           const progress = (e.progress_percentage || 0) / 100;
           return sum + (duration * progress);
@@ -118,7 +118,7 @@ export default function MyConstellationPage() {
             <div className="flex items-center space-x-4">
               <Link 
                 href="/constellation" 
-                className="text-cosmic-light hover:text-cosmic-accent transition-colors"
+                className="text-cosmic-light hover:text-cosmic-accent transition-colors cursor-pointer"
               >
                 返回星图
               </Link>
