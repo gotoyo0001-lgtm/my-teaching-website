@@ -1,9 +1,12 @@
 // lib/supabaseClient.ts - 教学生态系感知蓝图客户端配置
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@supabase/supabase-js";
 import type { Database } from './database.types';
 
 // 客户端 Supabase 实例（用于客户端组件）
-export const supabase = createClientComponentClient<Database>();
+export const supabase = createClient<Database>(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 // 常用的数据库查询工具函数（客户端）
 export const supabaseQueries = {

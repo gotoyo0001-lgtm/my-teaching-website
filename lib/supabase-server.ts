@@ -1,19 +1,35 @@
 // lib/supabase-server.ts - 服務端 Supabase 客戶端配置
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { Database } from './database.types.js';
 
 // 服務端 Supabase 實例（用於服務端組件和 API 路由）
-export const createServerSupabaseClient = () => {
-  const cookieStore = cookies();
-  return createServerComponentClient<Database>({ cookies: () => cookieStore });
+export const createServerSupabaseClient = async () => {
+  const cookieStore = await cookies();
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: any) {
+          cookieStore.set({ name, value, ...options });
+        },
+        remove(name: string, options: any) {
+          cookieStore.set({ name, value: '', ...options });
+        },
+      },
+    }
+  );
 };
 
 // 常用的數據庫查詢工具函數（服務端）
 export const supabaseServerQueries = {
   // 獲取用戶檔案
   getUserProfile: async (userId: string) => {
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -25,7 +41,7 @@ export const supabaseServerQueries = {
 
   // 獲取用戶的原型角色
   getUserRole: async (userId: string) => {
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase
       .from('profiles')
       .select('role')
@@ -37,7 +53,7 @@ export const supabaseServerQueries = {
 
   // 獲取已發布的課程列表
   getPublishedCourses: async () => {
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase
       .from('courses')
       .select(`
@@ -56,7 +72,7 @@ export const supabaseServerQueries = {
 
   // 獲取用戶的學習記錄
   getUserEnrollments: async (userId: string) => {
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase
       .from('enrollments')
       .select(`
@@ -81,7 +97,7 @@ export const supabaseServerQueries = {
 
   // 獲取課程詳情
   getCourseDetails: async (courseId: string) => {
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase
       .from('courses')
       .select(`

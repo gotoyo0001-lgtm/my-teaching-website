@@ -129,19 +129,37 @@ export default function DeepDiagnosticPage() {
         const testClient = createClient(supabaseUrl, supabaseKey);
         addResult('✅ Supabase 客戶端創建成功');
         
-        // 測試最基本的查詢
-        const { data, error } = await testClient
+        // 測試最基本的查詢 - 修復版本
+        addResult('🔍 測試基本 SELECT 查詢...');
+        const { data: selectData, error: selectError } = await testClient
           .from('profiles')
-          .select('count(*)', { count: 'exact', head: true });
+          .select('id, username')
+          .limit(1);
           
-        if (error) {
-          addResult(`❌ 基本查詢失敗: ${error.message}`);
-          addResult(`錯誤詳情: ${JSON.stringify(error, null, 2)}`);
+        if (selectError) {
+          addResult(`❌ SELECT 查詢失敗: ${selectError.message}`);
+          addResult(`錯誤詳情: ${JSON.stringify(selectError, null, 2)}`);
         } else {
-          addResult('✅ 基本查詢成功');
+          addResult('✅ SELECT 查詢成功');
+          addResult(`查詢結果: ${JSON.stringify(selectData, null, 2)}`);
+        }
+
+        // 測試 COUNT 查詢 - 使用不同的方法
+        addResult('🔢 測試 COUNT 查詢...');
+        const { data: allProfiles, error: countError } = await testClient
+          .from('profiles')
+          .select('id');
+          
+        if (countError) {
+          addResult(`❌ COUNT 查詢失敗: ${countError.message}`);
+          addResult(`錯誤詳情: ${JSON.stringify(countError, null, 2)}`);
+        } else {
+          const count = allProfiles ? allProfiles.length : 0;
+          addResult(`✅ COUNT 查詢成功，找到 ${count} 條記錄`);
         }
       } catch (error: any) {
         addResult(`❌ 客戶端創建失敗: ${error.message}`);
+        addResult(`堆疊追蹤: ${error.stack || '無'}`);
       }
 
     } catch (error: any) {
