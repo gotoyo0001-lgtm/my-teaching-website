@@ -62,35 +62,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isCatalyst = role === 'catalyst';
   const isGuardian = role === 'guardian';
   
-  // 添加调试日志（只在客户端环境下）
-  if (typeof window !== 'undefined') {
+  // 添加详细的调试日志（只在客户端环境下）
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
     console.log('🎯 当前认证状态:', { 
       hasUser: !!user, 
       hasProfile: !!profile, 
       role, 
       isGuardian,
-      userEmail: user?.email 
+      userEmail: user?.email,
+      profileLoaded: !!profile,
+      isLoading
     });
   }
 
-  // 获取用户档案
+  // 获取用户档案 - 优化性能和错误处理
   const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
-      if (typeof window !== 'undefined') {
+      if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
         console.log('🔍 正在获取用户档案, userId:', userId);
       }
-      const { data, error } = await safeQueries.getUserProfile(userId);
+      
+      // 使用更直接的查询方式
+      const { data, error } = await supabaseSafe
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+        
       if (error) {
         if (typeof window !== 'undefined') {
           console.error('❌ 获取用户档案失败:', error);
         }
         return null;
       }
-      if (typeof window !== 'undefined') {
+      
+      if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
         console.log('✅ 用户档案获取成功:', data);
       }
-      // 类型断言，确保数据符合 UserProfile 类型
-      return data ? (data as unknown as UserProfile) : null;
+      
+      return data ? (data as UserProfile) : null;
     } catch (error) {
       if (typeof window !== 'undefined') {
         console.error('❌ 获取用户档案时发生错误:', error);
@@ -257,12 +267,12 @@ export function useAuth() {
   return context;
 }
 
-// 自定义钩子：检查用户权限
+// 自定义钩子：检查用户权限 - 优化性能和准确性
 export function usePermissions() {
-  const { role, isGuardian, isLuminary, isCatalyst, profile } = useAuth();
+  const { role, isGuardian, isLuminary, isCatalyst, profile, isLoading } = useAuth();
   
-  // 添加调试信息（只在客户端环境下）
-  if (typeof window !== 'undefined') {
+  // 添加调试信息（只在开发环境下）
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
     console.log('🔐 权限检查详情:', {
       hasProfile: !!profile,
       profileRole: profile?.role,
@@ -271,12 +281,27 @@ export function usePermissions() {
       isLuminary,
       isCatalyst,
       userId: profile?.id,
-      userEmail: profile?.id // 避免暴露敏感信息
+      isLoading
     });
   }
   
-  // 确保权限检查基于实际的用户档案
-  const actualRole = profile?.role;
+  // 确保权限检查基于实际的用户档案，并处理加载状态
+  if (isLoading || !profile) {
+    return {
+      canCreateCourse: false,
+      canEnrollCourse: false,
+      canManageUsers: false,
+      canCreateOracle: false,
+      canHighlightComments: false,
+      canManageCategories: false,
+      canViewAnalytics: false,
+      canNominateCatalyst: false,
+      canAccessAdmin: false,
+      canAccessObservatory: false
+    };
+  }
+  
+  const actualRole = profile.role;
   const actualIsGuardian = actualRole === 'guardian';
   const actualIsLuminary = actualRole === 'luminary';
   const actualIsCatalyst = actualRole === 'catalyst';
@@ -313,8 +338,8 @@ export function usePermissions() {
     canAccessObservatory: actualIsGuardian
   };
   
-  // 添加调试信息（只在客户端环境下）
-  if (typeof window !== 'undefined') {
+  // 添加调试信息（只在开发环境下）
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
     console.log('✅ 最终权限结果:', permissions);
   }
   
@@ -335,9 +360,10 @@ export function useRoleNavigation() {
       case 'guardian':
         return [
           ...baseItems,
-          { label: '观星台', href: '/observatory', icon: 'eye' },
-          { label: '神谕管理', href: '/oracles', icon: 'message-square' },
-          { label: '用户管理', href: '/users', icon: 'users' },
+          { label: '观星台', href: '/admin/observatory', icon: 'eye' },
+          { label: '神谕管理', href: '/admin/oracles', icon: 'message-square' },
+          { label: '用户管理', href: '/admin/users', icon: 'users' },
+          { label: '管理控制台', href: '/admin', icon: 'shield' },
         ];
       
       case 'luminary':

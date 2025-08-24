@@ -29,19 +29,27 @@ export default function MyConstellationPage() {
     averageProgress: 0
   });
   const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push('/login');
+      console.log('⚠️ 我的星座: 用户未登录，重定向到登录页');
+      router.push('/login?redirectedFrom=/my-constellation');
     }
   }, [user, isLoading, router]);
 
-  // 加载学习统计数据
+  // 加载学习统计数据 - 优化性能和错误处理
   useEffect(() => {
     const loadStats = async () => {
-      if (!user) return;
+      if (!user || !profile) {
+        console.log('⚠️ 我的星座: 等待用户认证完成');
+        return;
+      }
 
       try {
+        setError(null);
+        console.log('🔄 开始加载学习统计数据...');
+        
         // 获取所有报名记录
         const { data: enrollmentData, error } = await supabase
           .from('enrollments')
@@ -57,10 +65,12 @@ export default function MyConstellationPage() {
 
         if (error) {
           console.error('加载学习统计失败:', error);
+          setError('加载学习数据失败，请刷新页面重试');
           return;
         }
 
         setEnrollments(enrollmentData || []);
+        console.log('✅ 学习数据加载成功:', enrollmentData?.length || 0, '门课程');
 
         // 计算统计数据
         const totalEnrollments = enrollmentData?.length || 0;
@@ -79,21 +89,53 @@ export default function MyConstellationPage() {
           totalStudyTime: Math.round(totalStudyTime / 60), // 转换为小时
           averageProgress
         });
+        
+        console.log('✅ 统计数据计算完成:', {
+          totalEnrollments,
+          completedCourses,
+          totalStudyTime: Math.round(totalStudyTime / 60),
+          averageProgress
+        });
       } catch (error) {
         console.error('加载统计数据时发生错误:', error);
+        setError('加载统计数据失败，请刷新页面重试');
       } finally {
         setIsLoadingStats(false);
       }
     };
 
     loadStats();
-  }, [user]);
+  }, [user, profile]);
 
-  if (isLoading || !user) {
+  if (isLoading || !user || !profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="cosmic-loading"></div>
-        <span className="ml-3 text-cosmic-light">正在连接你的星座...</span>
+      <div className="min-h-screen flex items-center justify-center bg-cosmic-void">
+        <div className="text-center">
+          <div className="cosmic-loading mb-4"></div>
+          <span className="text-cosmic-light">正在连接你的星座...</span>
+          <div className="text-cosmic-light/60 text-sm mt-2">
+            {!user ? '验证身份...' : !profile ? '加载用户档案...' : '初始化星座...'}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 渲染错误状态
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-cosmic-void">
+        <div className="text-center max-w-md">
+          <div className="text-cosmic-danger text-xl mb-4">❌</div>
+          <h2 className="text-xl font-bold text-cosmic-danger mb-4">加载失败</h2>
+          <p className="text-cosmic-light mb-6">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="cosmic-button"
+          >
+            刷新页面
+          </button>
+        </div>
       </div>
     );
   }

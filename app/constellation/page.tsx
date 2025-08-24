@@ -29,6 +29,7 @@ export default function ConstellationPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoadingCourses, setIsLoadingCourses] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   // 新增的筛选状态
   const [difficultyFilter, setDifficultyFilter] = useState<number | null>(null);
@@ -38,39 +39,61 @@ export default function ConstellationPage() {
   // 如果用户未登录，重定向到登录页
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push('/login');
+      console.log('⚠️ 知识星图: 用户未登录，重定向到登录页');
+      router.push('/login?redirectedFrom=/constellation');
     }
   }, [user, isLoading, router]);
 
-  // 加载课程和分类数据
+  // 加载课程和分类数据 - 优化性能和错误处理
   useEffect(() => {
     const loadData = async () => {
-      if (!user) return;
+      if (!user || !profile) {
+        console.log('⚠️ 知识星图: 等待用户认证完成');
+        return;
+      }
 
       try {
+        setError(null);
+        console.log('🔄 开始加载知识星图数据...');
+        
         // 并行加载课程和分类
         const [coursesResult, categoriesResult] = await Promise.all([
-          supabaseQueries.getPublishedCourses(),
+          supabaseQueries.getPublishedCourses().catch(err => {
+            console.error('加载课程失败:', err);
+            return { data: null, error: err };
+          }),
           // 直接查询分类
-          fetch('/api/categories').then(r => r.json()).catch(() => ({ data: [] }))
+          fetch('/api/categories', {
+            headers: {
+              'Authorization': `Bearer ${user.access_token || ''}`
+            }
+          }).then(r => r.json()).catch(err => {
+            console.error('加载分类失败:', err);
+            return { data: [] };
+          })
         ]);
 
         if (coursesResult.data) {
           setCourses(coursesResult.data as Course[]);
+          console.log('✅ 课程数据加载成功:', coursesResult.data.length, '门课程');
+        } else {
+          console.warn('⚠️ 课程数据为空');
         }
         
         if (categoriesResult.data) {
           setCategories(categoriesResult.data);
+          console.log('✅ 分类数据加载成功:', categoriesResult.data.length, '个分类');
         }
       } catch (error) {
         console.error('加载数据失败:', error);
+        setError('加载知识星图失败，请刷新页面重试');
       } finally {
         setIsLoadingCourses(false);
       }
     };
 
     loadData();
-  }, [user]);
+  }, [user, profile]);
 
   // 过滤和排序课程
   const filteredAndSortedCourses = (() => {
@@ -104,11 +127,35 @@ export default function ConstellationPage() {
   })();
 
   // 渲染加载状态
-  if (isLoading || !user) {
+  if (isLoading || !user || !profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="cosmic-loading"></div>
-        <span className="ml-3 text-cosmic-light">正在连接宇宙...</span>
+      <div className="min-h-screen flex items-center justify-center bg-cosmic-void">
+        <div className="text-center">
+          <div className="cosmic-loading mb-4"></div>
+          <span className="text-cosmic-light">正在连接宇宙...</span>
+          <div className="text-cosmic-light/60 text-sm mt-2">
+            {!user ? '验证身份...' : !profile ? '加载用户档案...' : '初始化星图...'}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 渲染错误状态
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-cosmic-void">
+        <div className="text-center max-w-md">
+          <div className="text-cosmic-danger text-xl mb-4">❌</div>
+          <h2 className="text-xl font-bold text-cosmic-danger mb-4">加载失败</h2>
+          <p className="text-cosmic-light mb-6">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="cosmic-button"
+          >
+            刷新页面
+          </button>
+        </div>
       </div>
     );
   }

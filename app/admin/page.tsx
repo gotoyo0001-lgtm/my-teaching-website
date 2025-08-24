@@ -15,32 +15,42 @@ export default function AdminDashboard() {
     totalEnrollments: 0,
     activeDiscussions: 0
   });
+  const [authCheckComplete, setAuthCheckComplete] = useState(false);
 
   // 添加调试信息
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
       console.log('🛡️ 管理页面状态:', {
         isLoading,
         hasUser: !!user,
         hasProfile: !!profile,
         profileRole: profile?.role,
-        canAccessAdmin
+        canAccessAdmin,
+        userEmail: user?.email,
+        authCheckComplete
       });
     }
-  }, [isLoading, user, profile, canAccessAdmin]);
+  }, [isLoading, user, profile, canAccessAdmin, authCheckComplete]);
 
   useEffect(() => {
     // 只在加载完成后检查权限
     if (!isLoading) {
       if (!user) {
         console.log('⚠️ 用户未登录，重定向到登录页');
-        router.push('/login');
+        router.push('/login?redirectedFrom=/admin');
         return;
       }
       
+      // 等待用户档案加载完成
       if (!profile) {
         console.log('⚠️ 用户档案不存在，等待加载...');
-        return;
+        // 设置超时，防止无限等待
+        const timeoutId = setTimeout(() => {
+          console.log('⚠️ 用户档案加载超时，重定向到首页');
+          router.push('/');
+        }, 10000); // 10秒超时
+        
+        return () => clearTimeout(timeoutId);
       }
       
       if (!canAccessAdmin) {
@@ -50,6 +60,7 @@ export default function AdminDashboard() {
       }
       
       console.log('✅ 用户有管理权限，允许访问');
+      setAuthCheckComplete(true);
     }
   }, [user, profile, isLoading, canAccessAdmin, router]);
 
@@ -69,11 +80,16 @@ export default function AdminDashboard() {
     });
   };
 
-  if (isLoading) {
+  if (isLoading || !authCheckComplete) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="cosmic-loading"></div>
-        <span className="ml-3 text-cosmic-light">正在載入守護者控制台...</span>
+      <div className="min-h-screen flex items-center justify-center bg-cosmic-void">
+        <div className="text-center">
+          <div className="cosmic-loading mb-4"></div>
+          <span className="text-cosmic-light">正在验证守护者身份...</span>
+          <div className="text-cosmic-light/60 text-sm mt-2">
+            {isLoading ? '加载认证状态...' : '检查管理权限...'}
+          </div>
+        </div>
       </div>
     );
   }
