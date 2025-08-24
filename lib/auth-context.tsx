@@ -261,37 +261,61 @@ export function useAuth() {
 export function usePermissions() {
   const { role, isGuardian, isLuminary, isCatalyst, profile } = useAuth();
   
-  // 添加调试信息
+  // 添加调试信息（只在客户端环境下）
+  if (typeof window !== 'undefined') {
+    console.log('🔐 权限检查详情:', {
+      hasProfile: !!profile,
+      profileRole: profile?.role,
+      computedRole: role,
+      isGuardian,
+      isLuminary,
+      isCatalyst,
+      userId: profile?.id,
+      userEmail: profile?.id // 避免暴露敏感信息
+    });
+  }
+  
+  // 确保权限检查基于实际的用户档案
+  const actualRole = profile?.role;
+  const actualIsGuardian = actualRole === 'guardian';
+  const actualIsLuminary = actualRole === 'luminary';
+  const actualIsCatalyst = actualRole === 'catalyst';
+  
   const permissions = {
     // 检查是否可以创建课程
-    canCreateCourse: isLuminary || isGuardian,
+    canCreateCourse: actualIsLuminary || actualIsGuardian,
     
     // 检查是否可以报名课程（所有已认证用户）
     canEnrollCourse: !!profile,
     
     // 检查是否可以管理用户
-    canManageUsers: isGuardian,
+    canManageUsers: actualIsGuardian,
     
     // 检查是否可以发布神谕
-    canCreateOracle: isGuardian,
+    canCreateOracle: actualIsGuardian,
     
     // 检查是否可以高亮评论
-    canHighlightComments: isCatalyst || isGuardian,
+    canHighlightComments: actualIsCatalyst || actualIsGuardian,
     
     // 检查是否可以管理分类
-    canManageCategories: isGuardian,
+    canManageCategories: actualIsGuardian,
     
     // 检查是否可以查看分析数据
-    canViewAnalytics: isLuminary || isCatalyst || isGuardian,
+    canViewAnalytics: actualIsLuminary || actualIsCatalyst || actualIsGuardian,
     
     // 检查是否可以提名领航者
-    canNominateCatalyst: isLuminary || isGuardian,
+    canNominateCatalyst: actualIsLuminary || actualIsGuardian,
+    
+    // 检查是否可以访问管理功能
+    canAccessAdmin: actualIsGuardian,
+    
+    // 检查是否可以访问观星台
+    canAccessObservatory: actualIsGuardian
   };
   
   // 添加调试信息（只在客户端环境下）
   if (typeof window !== 'undefined') {
-    console.log('🔐 权限检查结果:', { role, isGuardian, permissions });
-    console.log('👤 用户状态:', { hasProfile: !!profile, role: profile?.role, userId: profile?.id });
+    console.log('✅ 最终权限结果:', permissions);
   }
   
   return permissions;

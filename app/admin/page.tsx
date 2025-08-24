@@ -7,7 +7,7 @@ import Link from 'next/link';
 
 export default function AdminDashboard() {
   const { user, profile, isLoading } = useAuth();
-  const { canManageUsers, canCreateOracle, canManageCategories, canViewAnalytics } = usePermissions();
+  const { canManageUsers, canCreateOracle, canManageCategories, canViewAnalytics, canAccessAdmin } = usePermissions();
   const router = useRouter();
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -16,11 +16,42 @@ export default function AdminDashboard() {
     activeDiscussions: 0
   });
 
+  // 添加调试信息
   useEffect(() => {
-    if (!isLoading && (!profile || profile.role !== 'guardian')) {
-      router.push('/');
+    if (typeof window !== 'undefined') {
+      console.log('🛡️ 管理页面状态:', {
+        isLoading,
+        hasUser: !!user,
+        hasProfile: !!profile,
+        profileRole: profile?.role,
+        canAccessAdmin
+      });
     }
-  }, [profile, isLoading, router]);
+  }, [isLoading, user, profile, canAccessAdmin]);
+
+  useEffect(() => {
+    // 只在加载完成后检查权限
+    if (!isLoading) {
+      if (!user) {
+        console.log('⚠️ 用户未登录，重定向到登录页');
+        router.push('/login');
+        return;
+      }
+      
+      if (!profile) {
+        console.log('⚠️ 用户档案不存在，等待加载...');
+        return;
+      }
+      
+      if (!canAccessAdmin) {
+        console.log('⚠️ 用户没有管理权限，角色:', profile.role);
+        router.push('/');
+        return;
+      }
+      
+      console.log('✅ 用户有管理权限，允许访问');
+    }
+  }, [user, profile, isLoading, canAccessAdmin, router]);
 
   useEffect(() => {
     // 載入統計數據
@@ -47,12 +78,42 @@ export default function AdminDashboard() {
     );
   }
 
-  if (!profile || profile.role !== 'guardian') {
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-cosmic-danger mb-4">需要登錄</h1>
+          <p className="text-cosmic-light mb-6">請先登錄您的賬戶</p>
+          <Link href="/login" className="cosmic-button">
+            立即登錄
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="cosmic-loading"></div>
+        <span className="ml-3 text-cosmic-light">正在加載用戶檔案...</span>
+      </div>
+    );
+  }
+
+  if (!canAccessAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-cosmic-danger mb-4">訪問被拒絕</h1>
-          <p className="text-cosmic-light mb-6">只有守護者可以訪問此頁面</p>
+          <p className="text-cosmic-light mb-2">只有守護者可以訪問此頁面</p>
+          <p className="text-cosmic-light/60 mb-6 text-sm">當前角色: {
+            profile.role === 'voyager' && '遙行者' ||
+            profile.role === 'luminary' && '啟明者' ||
+            profile.role === 'catalyst' && '領航者' ||
+            profile.role === 'guardian' && '守護者' ||
+            '未知角色'
+          }</p>
           <Link href="/" className="cosmic-button">
             返回首頁
           </Link>

@@ -91,6 +91,11 @@ ALTER TABLE system_metrics ENABLE ROW LEVEL SECURITY;
 -- =====================================================
 
 -- 活动日志的 RLS 策略
+-- 先删除可能存在的策略，然后重新创建
+DROP POLICY IF EXISTS "guardians_can_view_all_activity_logs" ON activity_logs;
+DROP POLICY IF EXISTS "users_can_view_own_activity_logs" ON activity_logs;
+DROP POLICY IF EXISTS "system_can_insert_activity_logs" ON activity_logs;
+
 -- 只有守护者可以查看所有日志
 CREATE POLICY "guardians_can_view_all_activity_logs" ON activity_logs
     FOR SELECT USING (
@@ -111,6 +116,10 @@ CREATE POLICY "system_can_insert_activity_logs" ON activity_logs
     FOR INSERT WITH CHECK (true);
 
 -- 系统指标的 RLS 策略
+-- 先删除可能存在的策略，然后重新创建
+DROP POLICY IF EXISTS "guardians_can_view_system_metrics" ON system_metrics;
+DROP POLICY IF EXISTS "guardians_can_update_system_metrics" ON system_metrics;
+
 -- 只有守护者可以查看系统指标
 CREATE POLICY "guardians_can_view_system_metrics" ON system_metrics
     FOR SELECT USING (
@@ -132,6 +141,12 @@ CREATE POLICY "guardians_can_update_system_metrics" ON system_metrics
 -- =====================================================
 -- 第五阶段：创建观星台功能函数
 -- =====================================================
+
+-- 删除可能存在的函数，然后重新创建
+DROP FUNCTION IF EXISTS log_activity(UUID, TEXT, TEXT, JSONB, TEXT);
+DROP FUNCTION IF EXISTS update_system_metric(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS get_system_health();
+DROP FUNCTION IF EXISTS get_recent_activities(INTEGER);
 
 -- 创建记录活动日志的函数
 CREATE OR REPLACE FUNCTION log_activity(
@@ -250,6 +265,11 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- =====================================================
 -- 第六阶段：创建自动记录活动的触发器
 -- =====================================================
+
+-- 先删除可能存在的触发器和函数
+DROP TRIGGER IF EXISTS trigger_log_user_activity ON profiles;
+DROP FUNCTION IF EXISTS update_last_seen();
+DROP FUNCTION IF EXISTS log_user_activity();
 
 -- 创建记录用户最后访问时间的函数
 CREATE OR REPLACE FUNCTION update_last_seen()
