@@ -109,6 +109,22 @@ export default function AdminDashboard() {
       href: '/admin/discussions',
       permission: true,
       stats: `${stats.activeDiscussions} 個活躍討論`
+    },
+    {
+      title: '安全策略管理',
+      description: '監控 RLS 策略、管理用戶角色和系統安全狀態',
+      icon: '🔐',
+      href: '/admin/security',
+      permission: true,
+      stats: '企業級安全保護'
+    },
+    {
+      title: '守護者測試工具',
+      description: '完整的功能驗證和診斷工具',
+      icon: '🧪',
+      href: '/admin/guardian-test',
+      permission: true,
+      stats: '功能完整性驗證'
     }
   ];
 
