@@ -1,10 +1,12 @@
-# 🚀 my-voyager-app 部署流程指南
+# 🚀 my-voyager-app 完整同步部署流程
 
-## 📋 部署清单
+## 📋 完整部署清单
 
-每次完成代码修改后，请按照以下步骤进行部署：
+每次完成代码修改后，请按照以下步骤进行**三平台同步部署**：
 
-### 1️⃣ Git 提交流程
+### 🔄 **一键同步部署流程**
+
+#### **步骤 1: Git 提交并推送到 GitHub**
 
 ```bash
 # 1. 检查修改状态
@@ -25,43 +27,45 @@ git commit -m "类型: 简短描述
 1. 问题描述1
 2. 问题描述2"
 
-# 4. 推送到远程仓库
+# 4. 推送到 GitHub（触发 Netlify 自动部署）
 git push origin main
 ```
 
-### 2️⃣ Supabase 数据库更新
+#### **步骤 2: Netlify 自动部署验证**
 
-如果修改涉及数据库结构或权限，需要在 Supabase 控制台执行 SQL 脚本：
+推送到 GitHub 后，Netlify 会自动触发部署：
 
-1. **登录 Supabase 控制台**
-   - 访问 [https://supabase.com/dashboard](https://supabase.com/dashboard)
-   - 选择项目：my-voyager-app
+1. **监控部署状态**
+   - 访问 [Netlify Dashboard](https://app.netlify.com)
+   - 查看部署进度和日志
+   - 确认构建成功
 
-2. **执行 SQL 脚本**
+2. **验证前端部署**
+   - 访问生产环境 URL
+   - 测试关键功能是否正常
+   - 检查新功能是否生效
+
+#### **步骤 3: Supabase 数据库更新**
+
+如果修改涉及数据库结构、权限或功能：
+
+1. **选择合适的 SQL 脚本**
+   - 🔥 **快速修复**: `supabase-hotfix.sql`
+   - 📦 **完整更新**: `supabase-deployment-update.sql`
+   - 🆕 **新功能**: 创建新的版本化脚本
+
+2. **在 Supabase 控制台执行**
+   - 登录 [Supabase Dashboard](https://supabase.com/dashboard)
+   - 选择 my-voyager-app 项目
    - 导航到 `SQL Editor`
-   - 新建查询或选择现有查询
-   - 复制粘贴对应的 SQL 脚本内容
+   - 复制粘贴对应脚本内容
    - 点击 `Run` 执行
 
-3. **验证更新结果**
-   - 检查执行日志，确认无错误
-   - 验证表结构、策略、函数是否正确创建
-
-### 3️⃣ Netlify 部署
-
-项目配置了自动部署，推送到 Git 后会自动触发：
-
-1. **检查自动部署状态**
-   - 访问 [Netlify Dashboard](https://app.netlify.com)
-   - 查看部署状态和日志
-
-2. **手动触发部署（如需要）**
-   ```bash
-   # 本地构建测试
-   npm run build
-   
-   # 如果自动部署失败，可以手动上传 out/ 目录
-   ```
+3. **验证数据库更新**
+   - 检查表结构创建
+   - 验证 RLS 策略生效
+   - 测试新增函数功能
+   - 确认权限配置正确
 
 ## 📝 提交信息规范
 
