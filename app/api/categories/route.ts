@@ -1,7 +1,7 @@
 // app/api/categories/route.ts - 分类API端点
 
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabaseClient';
+import { createServerSupabaseClient } from '@/lib/supabase-server';
 
 export async function GET() {
   try {
