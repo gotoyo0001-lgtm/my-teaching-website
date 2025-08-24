@@ -212,6 +212,12 @@ export default function EditCoursePage({ params }: { params: { id: string } }) {
   };
 
   const handleDelete = async () => {
+    // 檢查是否在客戶端環境
+    if (typeof window === 'undefined') {
+      console.warn('刪除操作只能在客戶端執行');
+      return;
+    }
+    
     if (!window.confirm('确定要删除这颗恒星吗？此操作不可恢复。')) {
       return;
     }

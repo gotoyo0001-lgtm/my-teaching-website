@@ -3,7 +3,7 @@
 // app/studio/create/page.tsx - 恒星孕育页面
 // 启明者创建新课程的核心界面
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth, usePermissions } from '@/lib/auth-context';
@@ -49,10 +49,21 @@ export default function CreateCoursePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 权限检查
+  // 權限檢查
+  useEffect(() => {
+    if (!user || !canCreateCourse) {
+      router.push('/constellation');
+    }
+  }, [user, canCreateCourse, router]);
+
+  // 如果沒有權限，显示加載狀態
   if (!user || !canCreateCourse) {
-    router.push('/constellation');
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="cosmic-loading"></div>
+        <span className="ml-3 text-cosmic-light">正在檢查權限...</span>
+      </div>
+    );
   }
 
   const handleInputChange = (field: keyof CourseFormData, value: any) => {
