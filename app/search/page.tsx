@@ -3,7 +3,7 @@
 // app/search/page.tsx - 高级搜索页面
 // 星图导航系统的核心搜索引擎
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
@@ -24,7 +24,7 @@ type SearchResult = {
   relevance: number;
 };
 
-export default function SearchPage() {
+function SearchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
@@ -373,5 +373,20 @@ export default function SearchPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-b from-cosmic-void via-cosmic-deep to-cosmic-void flex items-center justify-center">
+        <div className="text-center">
+          <div className="cosmic-loading inline-block mb-4"></div>
+          <p className="text-cosmic-light/60">加载中...</p>
+        </div>
+      </div>
+    }>
+      <SearchContent />
+    </Suspense>
   );
 }

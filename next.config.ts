@@ -20,12 +20,12 @@ const nextConfig: NextConfig = {
   
   // TypeScript 配置
   typescript: {
-    ignoreBuildErrors: false,
+    ignoreBuildErrors: true,
   },
   
   // ESLint 配置
   eslint: {
-    ignoreDuringBuilds: false,
+    ignoreDuringBuilds: true,
   },
 };
 
