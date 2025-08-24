@@ -36,6 +36,10 @@ export const safeDb = {
       return queryBuilder;
     },
 
+    async selectAll(query = '*') {
+      return supabaseSafe.from('profiles').select(query);
+    },
+
     async insert(data: any) {
       return supabaseSafe.from('profiles').insert(data);
     },
@@ -241,19 +245,25 @@ export const safeAuth = {
 export const safeQueries = {
   // 获取用户档案
   async getUserProfile(userId: string) {
-    const { data, error } = await safeDb.profiles.select('*', { id: userId }).single();
+    const { data, error } = await supabaseSafe.from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
     return { data, error };
   },
 
   // 获取用户角色
   async getUserRole(userId: string) {
-    const { data, error } = await safeDb.profiles.select('role', { id: userId }).single();
+    const { data, error } = await supabaseSafe.from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single();
     return { data: data?.role, error };
   },
 
   // 获取已发布的课程
   async getPublishedCourses() {
-    const { data, error } = await safeDb.courses
+    const { data, error } = await supabaseSafe.from('courses')
       .select(`
         *,
         creator:profiles!creator_id(
@@ -261,7 +271,8 @@ export const safeQueries = {
           display_name,
           avatar_url
         )
-      `, { status: 'published' })
+      `)
+      .eq('status', 'published')
       .order('created_at', { ascending: false });
     
     return { data, error };
@@ -269,7 +280,7 @@ export const safeQueries = {
 
   // 获取用户学习记录
   async getUserEnrollments(userId: string) {
-    const { data, error } = await safeDb.enrollments
+    const { data, error } = await supabaseSafe.from('enrollments')
       .select(`
         *,
         course:courses(
@@ -283,7 +294,8 @@ export const safeQueries = {
             display_name
           )
         )
-      `, { user_id: userId })
+      `)
+      .eq('user_id', userId)
       .order('last_accessed_at', { ascending: false });
     
     return { data, error };
@@ -291,7 +303,7 @@ export const safeQueries = {
 
   // 获取课程详情
   async getCourseDetails(courseId: string) {
-    const { data, error } = await safeDb.courses
+    const { data, error } = await supabaseSafe.from('courses')
       .select(`
         *,
         creator:profiles!creator_id(
@@ -307,8 +319,53 @@ export const safeQueries = {
           order_index,
           estimated_duration
         )
-      `, { id: courseId })
+      `)
+      .eq('id', courseId)
       .single();
+    
+    return { data, error };
+  },
+
+  // 安全管理相关查询（仅守护者可用）
+  
+  // 获取表的RLS策略
+  async getTablePolicies(tableName: string) {
+    return supabaseSafe.rpc('get_table_policies', { table_name: tableName });
+  },
+
+  // 获取用户统计信息
+  async getUserStatistics() {
+    return supabaseSafe.rpc('get_user_statistics');
+  },
+
+  // 执行安全审计
+  async performSecurityAudit() {
+    return supabaseSafe.rpc('security_audit');
+  },
+
+  // 提升用户角色（仅守护者可用）
+  async promoteUserRole(targetUserId: string, newRole: string) {
+    return supabaseSafe.rpc('promote_user_role', {
+      target_user_id: targetUserId,
+      new_role: newRole
+    });
+  },
+
+  // 获取所有用户档案（用于管理界面）
+  async getAllProfiles() {
+    const { data, error } = await supabaseSafe.from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    return { data, error };
+  },
+
+  // 获取公开档案信息
+  async getPublicProfiles() {
+    const { data, error } = await supabaseSafe
+      .from('public_profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
     
     return { data, error };
   }
