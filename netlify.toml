@@ -6,8 +6,8 @@
   # 建置命令
   command = "npm run build"
   
-  # 輸出目錄
-  publish = "out"
+  # 輸出目錄 (Next.js 預設)
+  publish = ".next"
   
   # 建置環境
   environment = { NODE_VERSION = "18" }
