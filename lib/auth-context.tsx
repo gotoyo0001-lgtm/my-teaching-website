@@ -61,19 +61,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isLuminary = role === 'luminary';
   const isCatalyst = role === 'catalyst';
   const isGuardian = role === 'guardian';
+  
+  // 添加调试日志
+  console.log('🎯 当前认证状态:', { 
+    hasUser: !!user, 
+    hasProfile: !!profile, 
+    role, 
+    isGuardian,
+    userEmail: user?.email 
+  });
 
   // 获取用户档案
   const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
+      console.log('🔍 正在获取用户档案, userId:', userId);
       const { data, error } = await safeQueries.getUserProfile(userId);
       if (error) {
-        console.error('获取用户档案失败:', error);
+        console.error('❌ 获取用户档案失败:', error);
         return null;
       }
+      console.log('✅ 用户档案获取成功:', data);
       // 类型断言，确保数据符合 UserProfile 类型
       return data ? (data as unknown as UserProfile) : null;
     } catch (error) {
-      console.error('获取用户档案时发生错误:', error);
+      console.error('❌ 获取用户档案时发生错误:', error);
       return null;
     }
   };
@@ -239,8 +250,9 @@ export function useAuth() {
 // 自定义钩子：检查用户权限
 export function usePermissions() {
   const { role, isGuardian, isLuminary, isCatalyst, profile } = useAuth();
-
-  return {
+  
+  // 添加调试信息
+  const permissions = {
     // 检查是否可以创建课程
     canCreateCourse: isLuminary || isGuardian,
     
@@ -265,6 +277,10 @@ export function usePermissions() {
     // 检查是否可以提名领航者
     canNominateCatalyst: isLuminary || isGuardian,
   };
+  
+  console.log('🔐 权限检查结果:', { role, isGuardian, permissions });
+  
+  return permissions;
 }
 
 // 自定义钩子：获取角色特定的导航项
