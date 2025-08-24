@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
+import Navigation from "@/components/Navigation";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -42,7 +43,10 @@ export default function RootLayout({
             
             {/* 主要内容 */}
             <div className="relative z-10">
-              {children}
+              <Navigation />
+              <main className="pt-16">
+                {children}
+              </main>
             </div>
           </div>
         </AuthProvider>

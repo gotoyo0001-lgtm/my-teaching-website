@@ -1,5 +1,7 @@
 'use client';
 
+import type { Database } from '@/lib/database.types';
+
 // app/admin/create-test-accounts/page.tsx - 測試帳號創建頁面
 // 管理員專用：批量創建四種原型角色的測試帳號
 

@@ -48,7 +48,7 @@ export const supabaseServerQueries = {
       .eq('id', userId)
       .single();
     
-    return { data: data?.role, error };
+    return { data: data?.role as Database['public']['Tables']['profiles']['Row']['role'] | undefined, error };
   },
 
   // 獲取已發布的課程列表

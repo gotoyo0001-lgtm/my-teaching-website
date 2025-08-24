@@ -101,7 +101,13 @@ export default function CommentSection({ courseId, lessonId, className = '' }: C
       .from('comment_votes')
       .select('comment_id, vote_type')
       .eq('user_id', user.id)
-      .in('comment_id', allCommentIds);
+      .in('comment_id', allCommentIds) as {
+        data: Array<{
+          comment_id: string;
+          vote_type: 'upvote' | 'downvote';
+        }> | null;
+        error: any;
+      };
 
     const voteMap = new Map(votes?.map(v => [v.comment_id, v.vote_type]) || []);
 
@@ -125,7 +131,7 @@ export default function CommentSection({ courseId, lessonId, className = '' }: C
     try {
       setIsSubmitting(true);
 
-      const commentData = {
+      const commentData: Database['public']['Tables']['comments']['Insert'] = {
         author_id: user.id,
         content: newComment.trim(),
         content_type: commentType,
@@ -161,7 +167,7 @@ export default function CommentSection({ courseId, lessonId, className = '' }: C
     try {
       setIsSubmitting(true);
 
-      const replyData = {
+      const replyData: Database['public']['Tables']['comments']['Insert'] = {
         author_id: user.id,
         content: replyContent.trim(),
         content_type: 'text',
@@ -210,13 +216,15 @@ export default function CommentSection({ courseId, lessonId, className = '' }: C
           .eq('comment_id', commentId);
       } else {
         // 新投票或更改投票
+        const voteData: Database['public']['Tables']['comment_votes']['Insert'] = {
+          user_id: user.id,
+          comment_id: commentId,
+          vote_type: voteType
+        };
+        
         await supabase
           .from('comment_votes')
-          .upsert({
-            user_id: user.id,
-            comment_id: commentId,
-            vote_type: voteType
-          });
+          .upsert(voteData);
       }
 
       await loadComments();

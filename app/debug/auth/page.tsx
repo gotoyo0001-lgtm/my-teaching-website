@@ -1,5 +1,7 @@
 'use client';
 
+import type { Database } from '@/lib/database.types';
+
 // app/debug/auth/page.tsx - 認證問題診斷工具
 // 幫助診斷和解決登入問題
 

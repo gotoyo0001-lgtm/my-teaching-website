@@ -29,7 +29,7 @@ export const supabaseQueries = {
       .eq('id', userId)
       .single();
     
-    return { data: data?.role, error };
+    return { data: data?.role as Database['public']['Tables']['profiles']['Row']['role'] | undefined, error };
   },
 
   // 获取已发布的课程列表

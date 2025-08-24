@@ -1,5 +1,7 @@
 'use client';
 
+import type { Database } from '@/lib/database.types';
+
 // app/studio/create/page.tsx - 恒星孕育页面
 // 启明者创建新课程的核心界面
 

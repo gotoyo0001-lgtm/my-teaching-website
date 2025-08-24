@@ -6,7 +6,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, supabaseQueries } from './supabaseClient';
-import type { ArchetypeRole } from './database.types';
+import type { ArchetypeRole, Database } from './database.types';
 
 interface UserProfile {
   id: string;
@@ -105,13 +105,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // 如果注册成功，创建用户档案
     if (data.user) {
+      const profileData: Database['public']['Tables']['profiles']['Insert'] = {
+        id: data.user.id,
+        username,
+        role: 'voyager', // 默认角色为遥行者
+      };
+      
       const { error: profileError } = await supabase
         .from('profiles')
-        .insert({
-          id: data.user.id,
-          username,
-          role: 'voyager', // 默认角色为遥行者
-        });
+        .insert(profileData);
 
       if (profileError) {
         console.error('创建用户档案失败:', profileError);
@@ -134,12 +136,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user) return { error: new Error('用户未登录') };
 
+    const updateData: Database['public']['Tables']['profiles']['Update'] = {
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+
     const { error } = await supabase
       .from('profiles')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', user.id);
 
     if (!error) {
@@ -164,9 +168,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // 更新最后访问时间
         if (profileData) {
+          const updateData: Database['public']['Tables']['profiles']['Update'] = {
+            last_seen_at: new Date().toISOString()
+          };
+          
           await supabase
             .from('profiles')
-            .update({ last_seen_at: new Date().toISOString() })
+            .update(updateData)
             .eq('id', session.user.id);
         }
       } else {
