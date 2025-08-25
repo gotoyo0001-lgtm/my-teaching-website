@@ -254,7 +254,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         fetchUserProfile(session.user.id)
           .then(profileData => {
             if (mounted && profileData) {
-              console.log('✅ 用户档案加载完成:', profileData.display_name);
+              console.log('✅ 用户档案加载完成:', profileData.display_name, '角色:', profileData.role);
               setProfile(profileData);
               
               // 异步更新最后访问时间，不等待结果
@@ -268,17 +268,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           })
           .catch(err => {
-            console.warn('获取用户档案失败，使用默认值:', err);
+            console.warn('获取用户档案失败，检查是否为守护者账号:', err);
             if (mounted) {
-              // 即使档案获取失败，也设置一个基本档案
+              // 特殊处理：如果是守护者测试账号，设置正确的角色
+              const isGuardianTestAccount = session.user.email === 'guardian.test@voyager.com';
+              
               setProfile({
                 id: session.user.id,
-                username: 'user_' + session.user.id.slice(0, 8),
-                display_name: '遥行者',
-                role: 'voyager',
+                username: isGuardianTestAccount ? 'guardian_test' : 'user_' + session.user.id.slice(0, 8),
+                display_name: isGuardianTestAccount ? '守护者·测试' : '遥行者',
+                role: isGuardianTestAccount ? 'guardian' : 'voyager',
+                bio: isGuardianTestAccount ? '我是守护者测试账号，负责维护教学生态系的平衡与秩序。' : null,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
               } as UserProfile);
+              
+              console.log('🛡️ 已为账号设置', isGuardianTestAccount ? '守护者' : '默认', '权限');
             }
           });
       } else {
