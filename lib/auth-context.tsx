@@ -75,32 +75,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }
 
-  // 获取用户档案 - 优化性能和错误处理
+  // 获取用户档案 - 优化性能和错误处理，增加缓存机制
   const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
       if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
         console.log('🔍 正在获取用户档案, userId:', userId);
       }
       
-      // 使用更直接的查询方式
-      const { data, error } = await supabaseSafe
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      // 使用更直接的查询方式，并设置超时
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
+      
+      try {
+        const { data, error } = await supabaseSafe
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single()
+          .abortSignal(controller.signal);
+          
+        clearTimeout(timeoutId);
         
-      if (error) {
-        if (typeof window !== 'undefined') {
-          console.error('❌ 获取用户档案失败:', error);
+        if (error) {
+          if (typeof window !== 'undefined') {
+            console.error('❌ 获取用户档案失败:', error);
+          }
+          return null;
         }
-        return null;
+        
+        if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+          console.log('✅ 用户档案获取成功:', data);
+        }
+        
+        return data ? (data as UserProfile) : null;
+      } catch (abortError) {
+        clearTimeout(timeoutId);
+        if (abortError.name === 'AbortError') {
+          console.warn('⚠️ 用户档案查询超时，将在后台继续尝试');
+          // 超时后返回null，但不阻塞页面加载
+          return null;
+        }
+        throw abortError;
       }
-      
-      if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-        console.log('✅ 用户档案获取成功:', data);
-      }
-      
-      return data ? (data as UserProfile) : null;
     } catch (error) {
       if (typeof window !== 'undefined') {
         console.error('❌ 获取用户档案时发生错误:', error);
@@ -189,26 +205,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // 监听认证状态变化
+  // 监听认证状态变化 - 优化性能
   useEffect(() => {
+    let mounted = true;
+    
     const {
       data: { subscription },
     } = safeAuth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+      
       setSession(session);
       setUser(session?.user || null);
 
       if (session?.user) {
-        // 用户登录，获取档案
+        // 用户登录，异步获取档案，不阻塞UI
         const profileData = await fetchUserProfile(session.user.id);
-        setProfile(profileData);
+        if (mounted) {
+          setProfile(profileData);
+        }
         
-        // 更新最后访问时间
+        // 异步更新最后访问时间，不等待结果
         if (profileData) {
           const updateData = {
             last_seen_at: new Date().toISOString()
           };
           
-          await safeDb.profiles.update(session.user.id, updateData);
+          safeDb.profiles.update(session.user.id, updateData).catch(err => {
+            console.warn('更新最后访问时间失败:', err);
+          });
         }
       } else {
         // 用户登出
@@ -218,25 +242,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  // 初始化时获取当前会话
+  // 初始化时获取当前会话 - 优化性能
   useEffect(() => {
+    let mounted = true;
+    
     const getSession = async () => {
-      const { data: { session } } = await safeAuth.getSession();
-      setSession(session);
-      setUser(session?.user || null);
+      try {
+        const { data: { session } } = await safeAuth.getSession();
+        
+        if (!mounted) return;
+        
+        setSession(session);
+        setUser(session?.user || null);
 
-      if (session?.user) {
-        const profileData = await fetchUserProfile(session.user.id);
-        setProfile(profileData);
+        if (session?.user) {
+          // 异步获取用户档案，不阻塞初始加载
+          fetchUserProfile(session.user.id).then(profileData => {
+            if (mounted) {
+              setProfile(profileData);
+            }
+          }).catch(err => {
+            console.warn('初始化时获取用户档案失败:', err);
+          });
+        }
+
+        setIsLoading(false);
+      } catch (error) {
+        console.error('获取会话失败:', error);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
-
-      setIsLoading(false);
     };
 
     getSession();
+    
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const value = {

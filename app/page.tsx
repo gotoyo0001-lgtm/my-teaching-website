@@ -10,28 +10,34 @@ import { useAuth } from '@/lib/auth-context';
 
 export default function HomePage() {
   const router = useRouter();
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, profile } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    // 如果用户已登入，直接跳转到星座图
-    if (user && !isLoading) {
-      router.push('/constellation');
-    }
-  }, [user, isLoading, router]);
+    // 简化首页加载逻辑，不自动跳转
+    // 让用户手动选择是否进入星座图
+    const timer = setTimeout(() => {
+      setShowContent(true);
+    }, 100); // 快速显示内容
+    
+    return () => clearTimeout(timer);
+  }, []);
 
-  if (!mounted || isLoading) {
+  // 优化加载状态 - 只在必要时显示
+  if (!mounted || !showContent) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-cosmic-void">
         <div className="text-center">
-          {/* 优化的加载动画 */}
-          <div className="relative w-16 h-16 mx-auto mb-4">
-            <div className="absolute inset-0 rounded-full border-4 border-cosmic-accent/20"></div>
-            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-cosmic-accent animate-spin"></div>
-            <div className="absolute inset-2 rounded-full border-2 border-cosmic-energy/30 animate-pulse"></div>
+          {/* 简化的加载动画 */}
+          <div className="relative w-12 h-12 mx-auto mb-4">
+            <div className="absolute inset-0 rounded-full border-2 border-cosmic-accent/30 animate-ping"></div>
+            <div className="relative rounded-full border-2 border-cosmic-accent animate-spin">
+              <div className="w-12 h-12 rounded-full border-l-2 border-transparent"></div>
+            </div>
           </div>
-          <span className="text-cosmic-light animate-pulse">正在连接宇宙...</span>
+          <span className="text-cosmic-light text-sm">正在连接宇宙...</span>
         </div>
       </div>
     );
@@ -50,15 +56,14 @@ export default function HomePage() {
         
         {/* 优化的星星效果 - 减少DOM元素数量 */}
         <div className="absolute inset-0">
-          {[...Array(15)].map((_, i) => (
+          {[...Array(8)].map((_, i) => (
             <div
               key={i}
-              className="absolute w-1 h-1 bg-cosmic-star rounded-full opacity-30 animate-pulse"
+              className="absolute w-1 h-1 bg-cosmic-star rounded-full opacity-40"
               style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 3}s`,
-                animationDuration: `${2 + Math.random() * 2}s`,
+                left: `${20 + i * 10}%`,
+                top: `${15 + (i % 3) * 25}%`,
+                animationDelay: `${i * 0.5}s`,
               }}
             />
           ))}
@@ -82,12 +87,22 @@ export default function HomePage() {
             </div>
             
             <div className="space-x-4">
-              <Link 
-                href="/login" 
-                className="cosmic-button"
-              >
-                进入宇宙
-              </Link>
+              {/* 根据用户状态显示不同按钮 */}
+              {user ? (
+                <Link 
+                  href="/constellation" 
+                  className="cosmic-button"
+                >
+                  进入星座图
+                </Link>
+              ) : (
+                <Link 
+                  href="/login" 
+                  className="cosmic-button"
+                >
+                  进入宇宙
+                </Link>
+              )}
             </div>
           </div>
         </nav>
@@ -170,16 +185,46 @@ export default function HomePage() {
             {/* 行动召唤 */}
             <div className="space-y-6">
               <div className="space-x-4">
-                <Link 
-                  href="/login" 
-                  className="cosmic-button text-lg px-8 py-4"
-                >
-                  开始你的星际之旅
-                </Link>
+                {/* 根据用户状态显示不同按钮 */}
+                {user ? (
+                  <>
+                    <Link 
+                      href="/constellation" 
+                      className="cosmic-button text-lg px-8 py-4"
+                    >
+                      探索知识星图
+                    </Link>
+                    <Link 
+                      href="/my-constellation" 
+                      className="cosmic-button-secondary text-lg px-8 py-4"
+                    >
+                      我的星座
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link 
+                      href="/login" 
+                      className="cosmic-button text-lg px-8 py-4"
+                    >
+                      开始你的星际之旅
+                    </Link>
+                    <Link 
+                      href="/login" 
+                      className="cosmic-button-secondary text-lg px-8 py-4"
+                    >
+                      了解更多
+                    </Link>
+                  </>
+                )}
               </div>
               
               <p className="text-cosmic-light/60 text-sm">
-                加入宇宙，发现你的星座，点亮你的知识恒星
+                {user ? (
+                  `欢迎回来，${profile?.display_name || profile?.username || '遥行者'}！继续你的星际探索之旅`
+                ) : (
+                  '加入宇宙，发现你的星座，点亮你的知识恒星'
+                )}
               </p>
             </div>
           </div>

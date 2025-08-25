@@ -29,15 +29,14 @@ export default function RootLayout({
       <body className={`${inter.className} bg-cosmic-void text-cosmic-light min-h-screen`}>
         <AuthProvider>
           <div className="relative min-h-screen overflow-hidden">
-            {/* 宇宙背景效果 */}
+            {/* 简化的宇宙背景效果 */}
             <div className="fixed inset-0 bg-gradient-to-b from-cosmic-void via-cosmic-deep to-cosmic-void">
-              {/* 星辰效果 */}
-              <div className="absolute inset-0 opacity-30">
-                <div className="absolute top-1/4 left-1/4 w-1 h-1 bg-cosmic-star rounded-full animate-pulse"></div>
-                <div className="absolute top-1/3 right-1/3 w-0.5 h-0.5 bg-cosmic-star rounded-full animate-pulse delay-1000"></div>
-                <div className="absolute bottom-1/4 left-1/2 w-1.5 h-1.5 bg-cosmic-star rounded-full animate-pulse delay-2000"></div>
-                <div className="absolute top-3/4 right-1/4 w-0.5 h-0.5 bg-cosmic-star rounded-full animate-pulse delay-3000"></div>
-                <div className="absolute bottom-1/3 left-1/3 w-1 h-1 bg-cosmic-star rounded-full animate-pulse delay-4000"></div>
+              {/* 简化的星辰效果 - 减少动画 */}
+              <div className="absolute inset-0 opacity-20">
+                <div className="absolute top-1/4 left-1/4 w-1 h-1 bg-cosmic-star rounded-full"></div>
+                <div className="absolute top-1/3 right-1/3 w-0.5 h-0.5 bg-cosmic-star rounded-full"></div>
+                <div className="absolute bottom-1/4 left-1/2 w-1.5 h-1.5 bg-cosmic-star rounded-full"></div>
+                <div className="absolute top-3/4 right-1/4 w-0.5 h-0.5 bg-cosmic-star rounded-full"></div>
               </div>
             </div>
             
