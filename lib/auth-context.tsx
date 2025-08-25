@@ -82,19 +82,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('🔍 正在获取用户档案, userId:', userId);
       }
       
-      // 使用更直接的查询方式，并设置较短的超时时间
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000); // 减少到2秒超时
+      // 使用Promise.race实现超时机制
+      const queryPromise = supabaseSafe
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout')), 2000); // 2秒超时
+      });
       
       try {
-        const { data, error } = await supabaseSafe
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .single()
-          .abortSignal(controller.signal);
-          
-        clearTimeout(timeoutId);
+        const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
         
         if (error) {
           if (typeof window !== 'undefined') {
@@ -108,9 +108,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         
         return data ? (data as UserProfile) : null;
-      } catch (abortError) {
-        clearTimeout(timeoutId);
-        if (abortError.name === 'AbortError') {
+      } catch (timeoutError: unknown) {
+        if (timeoutError instanceof Error && timeoutError.message === 'Timeout') {
           console.warn('⚠️ 用户档案查询超时（2秒），使用缓存或默认值');
           // 超时后返回基本用户信息，允许用户正常登录
           return {
@@ -122,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             updated_at: new Date().toISOString()
           } as UserProfile;
         }
-        throw abortError;
+        throw timeoutError;
       }
     } catch (error) {
       if (typeof window !== 'undefined') {
