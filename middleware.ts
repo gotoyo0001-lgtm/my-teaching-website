@@ -57,29 +57,66 @@ export async function middleware(req: NextRequest) {
     }
   );
 
-  const { data: { session } } = await supabase.auth.getSession();
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
 
-  // 需要认证的路由列表
-  const protectedRoutes = [
-    '/dashboard',
-    '/constellation', 
-    '/my-constellation',
-    '/studio',
-    '/admin',
-    '/discussions'
-  ];
+    // 添加调试日志（仅在开发环境）
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🛡️ Middleware检查:', {
+        path: req.nextUrl.pathname,
+        hasSession: !!session,
+        sessionError: error,
+        userEmail: session?.user?.email,
+        timestamp: new Date().toISOString()
+      });
+    }
 
-  // 检查当前路径是否需要认证
-  const requiresAuth = protectedRoutes.some(route => 
-    req.nextUrl.pathname.startsWith(route)
-  );
+    // 需要认证的路由列表
+    const protectedRoutes = [
+      '/dashboard',
+      '/constellation', 
+      '/my-constellation',
+      '/studio',
+      '/admin',
+      '/discussions'
+    ];
 
-  // 如果用户没有会话且尝试访问受保护的路由，则重定向到登录页面
-  if (!session && requiresAuth) {
-    const redirectUrl = req.nextUrl.clone();
-    redirectUrl.pathname = "/login";
-    redirectUrl.searchParams.set(`redirectedFrom`, req.nextUrl.pathname);
-    return NextResponse.redirect(redirectUrl);
+    // 检查当前路径是否需要认证
+    const requiresAuth = protectedRoutes.some(route => 
+      req.nextUrl.pathname.startsWith(route)
+    );
+
+    // 如果没有找到受保护的路由，直接通过
+    if (!requiresAuth) {
+      return res;
+    }
+
+    // 对于需要认证的路由，检查session
+    if (!session) {
+      console.log('🚫 Middleware: 无session，重定向到登录页面:', req.nextUrl.pathname);
+      const redirectUrl = req.nextUrl.clone();
+      redirectUrl.pathname = "/login";
+      redirectUrl.searchParams.set(`redirectedFrom`, req.nextUrl.pathname);
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    // 对于守护者测试账号，添加特殊处理
+    if (session.user?.email === 'guardian.test@voyager.com') {
+      console.log('🛡️ Middleware: 检测到守护者测试账号，允许访问');
+    }
+
+  } catch (middlewareError) {
+    console.error('❌ Middleware错误:', middlewareError);
+    // 在出错时，对于受保护路由重定向到登录页面
+    const protectedRoutes = ['/dashboard', '/constellation', '/my-constellation', '/studio', '/admin', '/discussions'];
+    const requiresAuth = protectedRoutes.some(route => req.nextUrl.pathname.startsWith(route));
+    
+    if (requiresAuth) {
+      const redirectUrl = req.nextUrl.clone();
+      redirectUrl.pathname = "/login";
+      redirectUrl.searchParams.set(`redirectedFrom`, req.nextUrl.pathname);
+      return NextResponse.redirect(redirectUrl);
+    }
   }
 
   return res;
