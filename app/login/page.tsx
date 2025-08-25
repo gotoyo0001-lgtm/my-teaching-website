@@ -19,16 +19,70 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{email?: string, password?: string, username?: string}>({});
+
+  // 字段验证函数
+  const validateField = (field: string, value: string) => {
+    const errors = { ...fieldErrors };
+    
+    switch (field) {
+      case 'email':
+        if (!value) {
+          errors.email = '请输入邮箱地址';
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          errors.email = '请输入有效的邮箱地址';
+        } else {
+          delete errors.email;
+        }
+        break;
+      case 'password':
+        if (!value) {
+          errors.password = '请输入密码';
+        } else if (value.length < 6) {
+          errors.password = '密码至少需要6位字符';
+        } else {
+          delete errors.password;
+        }
+        break;
+      case 'username':
+        if (isSignUp && !value.trim()) {
+          errors.username = '请输入用户名';
+        } else {
+          delete errors.username;
+        }
+        break;
+    }
+    
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // 表单验证
+  const validateForm = () => {
+    const emailValid = validateField('email', email);
+    const passwordValid = validateField('password', password);
+    const usernameValid = isSignUp ? validateField('username', username) : true;
+    
+    return emailValid && passwordValid && usernameValid;
+  };
 
   // 如果用户已登入，重定向到主页
   useEffect(() => {
     if (user && !isLoading) {
+      console.log('🎆 用户已登录，跳转到星座图');
       router.push('/constellation');
     }
   }, [user, isLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // 验证表单
+    if (!validateForm()) {
+      console.warn('⚠️ 表单验证失败');
+      return;
+    }
+    
     setIsSubmitting(true);
     setError(null);
     setSuccess(null);
@@ -36,27 +90,30 @@ export default function LoginPage() {
     try {
       if (isSignUp) {
         // 注册新遥行者
-        if (!username.trim()) {
-          setError('请输入你的星际称号');
-          return;
-        }
-        
+        console.log('🚀 开始注册用户:', { email, username });
         const { error } = await signUp(email, password, username);
         if (error) {
+          console.error('❌ 注册失败:', error);
           setError('创建账户失败：' + error.message);
         } else {
+          console.log('✅ 注册成功');
           setSuccess('欢迎来到宇宙！请检查邮箱验证链接。');
         }
       } else {
         // 登入现有遥行者
+        console.log('🚀 开始登录用户:', { email });
         const { error } = await signIn(email, password);
         if (error) {
+          console.error('❌ 登录失败:', error);
           setError('登入失败：' + error.message);
         } else {
-          router.push('/constellation');
+          console.log('✅ 登录成功，准备跳转');
+          // 成功后由认证上下文自动处理跳转
+          setSuccess('登录成功！正在进入宇宙...');
         }
       }
     } catch (error) {
+      console.error('❌ 认证过程中发生错误:', error);
       setError('发生了未知错误，请稍后再试');
     } finally {
       setIsSubmitting(false);
@@ -125,11 +182,20 @@ export default function LoginPage() {
                   id="username"
                   type="text"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="cosmic-input"
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    if (fieldErrors.username) {
+                      validateField('username', e.target.value);
+                    }
+                  }}
+                  onBlur={() => validateField('username', username)}
+                  className={`cosmic-input ${fieldErrors.username ? 'border-cosmic-danger' : ''}`}
                   placeholder="输入你在宇宙中的名字"
                   required={isSignUp}
                 />
+                {fieldErrors.username && (
+                  <p className="text-cosmic-danger text-sm mt-1">{fieldErrors.username}</p>
+                )}
               </div>
             )}
             
@@ -141,11 +207,20 @@ export default function LoginPage() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="cosmic-input"
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (fieldErrors.email) {
+                    validateField('email', e.target.value);
+                  }
+                }}
+                onBlur={() => validateField('email', email)}
+                className={`cosmic-input ${fieldErrors.email ? 'border-cosmic-danger' : ''}`}
                 placeholder="your@email.com"
                 required
               />
+              {fieldErrors.email && (
+                <p className="text-cosmic-danger text-sm mt-1">{fieldErrors.email}</p>
+              )}
             </div>
             
             <div>
@@ -156,12 +231,21 @@ export default function LoginPage() {
                 id="password"
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="cosmic-input"
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (fieldErrors.password) {
+                    validateField('password', e.target.value);
+                  }
+                }}
+                onBlur={() => validateField('password', password)}
+                className={`cosmic-input ${fieldErrors.password ? 'border-cosmic-danger' : ''}`}
                 placeholder="输入你的宇宙密码"
                 required
                 minLength={6}
               />
+              {fieldErrors.password && (
+                <p className="text-cosmic-danger text-sm mt-1">{fieldErrors.password}</p>
+              )}
             </div>
             
             <button
@@ -188,6 +272,7 @@ export default function LoginPage() {
                 setIsSignUp(!isSignUp);
                 setError(null);
                 setSuccess(null);
+                setFieldErrors({});
               }}
               className="text-cosmic-accent hover:text-cosmic-energy transition-colors duration-200"
             >
