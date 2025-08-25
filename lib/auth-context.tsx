@@ -372,26 +372,6 @@ export function useAuth() {
 export function usePermissions() {
   const { role, isGuardian, isLuminary, isCatalyst, profile, isLoading } = useAuth();
   
-  // 添加调试信息（只在开发环境下）
-  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-    console.log('🔐 权限检查详情:', {
-      hasProfile: !!profile,
-      profileRole: profile?.role,
-      computedRole: role,
-      isGuardian,
-      isLuminary,
-      isCatalyst,
-      userId: profile?.id,
-      isLoading,
-      actualRole,
-      actualIsGuardian,
-      canAccessAdmin: actualIsGuardian,
-      canManageUsers: actualIsGuardian,
-      canCreateOracle: actualIsGuardian,
-      canAccessObservatory: actualIsGuardian
-    });
-  }
-  
   // 确保权限检查基于实际的用户档案，并处理加载状态
   if (isLoading || !profile) {
     return {
@@ -412,6 +392,26 @@ export function usePermissions() {
   const actualIsGuardian = actualRole === 'guardian';
   const actualIsLuminary = actualRole === 'luminary';
   const actualIsCatalyst = actualRole === 'catalyst';
+  
+  // 添加调试信息（只在开发环境下）
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+    console.log('🔐 权限检查详情:', {
+      hasProfile: !!profile,
+      profileRole: profile?.role,
+      computedRole: role,
+      isGuardian,
+      isLuminary,
+      isCatalyst,
+      userId: profile?.id,
+      isLoading,
+      actualRole,
+      actualIsGuardian,
+      canAccessAdmin: actualIsGuardian,
+      canManageUsers: actualIsGuardian,
+      canCreateOracle: actualIsGuardian,
+      canAccessObservatory: actualIsGuardian
+    });
+  }
   
   const permissions = {
     // 检查是否可以创建课程
