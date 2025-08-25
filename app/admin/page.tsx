@@ -33,7 +33,7 @@ export default function AdminDashboard() {
   }, [isLoading, user, profile, canAccessAdmin, authCheckComplete]);
 
   useEffect(() => {
-    // 只在加载完成后检查权限
+    // 简化权限检查逻辑
     if (!isLoading) {
       if (!user) {
         console.log('⚠️ 用户未登录，重定向到登录页');
@@ -41,19 +41,12 @@ export default function AdminDashboard() {
         return;
       }
       
-      // 等待用户档案加载完成
       if (!profile) {
         console.log('⚠️ 用户档案不存在，等待加载...');
-        // 设置超时，防止无限等待
-        const timeoutId = setTimeout(() => {
-          console.log('⚠️ 用户档案加载超时，重定向到首页');
-          router.push('/');
-        }, 10000); // 10秒超时
-        
-        return () => clearTimeout(timeoutId);
+        return; // 简单等待，不设置超时
       }
       
-      if (!canAccessAdmin) {
+      if (profile.role !== 'guardian') {
         console.log('⚠️ 用户没有管理权限，角色:', profile.role);
         router.push('/');
         return;
@@ -62,7 +55,7 @@ export default function AdminDashboard() {
       console.log('✅ 用户有管理权限，允许访问');
       setAuthCheckComplete(true);
     }
-  }, [user, profile, isLoading, canAccessAdmin, router]);
+  }, [user, profile, isLoading, router]);
 
   useEffect(() => {
     // 載入統計數據

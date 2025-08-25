@@ -69,6 +69,15 @@ export default function Navigation() {
                 {profile?.role === 'guardian' && (
                   <Link
                     href="/admin"
+                    onClick={(e) => {
+                      if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+                        console.log('🔗 管理控制台链接被点击!', { 
+                          href: '/admin', 
+                          userRole: profile?.role,
+                          timestamp: new Date().toISOString()
+                        });
+                      }
+                    }}
                     className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-colors duration-200 ${
                       isActive('/admin')
                         ? 'bg-cosmic-danger/20 text-cosmic-danger'
@@ -181,7 +190,17 @@ export default function Navigation() {
                     {canManageUsers && (
                       <Link
                         href="/admin/users"
-                        onClick={() => setIsMenuOpen(false)}
+                        onClick={(e) => {
+                          setIsMenuOpen(false);
+                          if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+                            console.log('🔗 用户管理链接被点击!', { 
+                              href: '/admin/users', 
+                              userRole: profile?.role,
+                              canManageUsers,
+                              timestamp: new Date().toISOString()
+                            });
+                          }
+                        }}
                         className="block px-3 py-2 rounded-md text-cosmic-light hover:text-cosmic-danger hover:bg-cosmic-danger/10"
                       >
                         👥 用戶管理
@@ -190,7 +209,17 @@ export default function Navigation() {
                     {canCreateOracle && (
                       <Link
                         href="/admin/oracles"
-                        onClick={() => setIsMenuOpen(false)}
+                        onClick={(e) => {
+                          setIsMenuOpen(false);
+                          if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+                            console.log('🔗 神谕管理链接被点击!', { 
+                              href: '/admin/oracles', 
+                              userRole: profile?.role,
+                              canCreateOracle,
+                              timestamp: new Date().toISOString()
+                            });
+                          }
+                        }}
                         className="block px-3 py-2 rounded-md text-cosmic-light hover:text-cosmic-danger hover:bg-cosmic-danger/10"
                       >
                         📢 神諭管理

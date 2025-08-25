@@ -382,7 +382,13 @@ export function usePermissions() {
       isLuminary,
       isCatalyst,
       userId: profile?.id,
-      isLoading
+      isLoading,
+      actualRole,
+      actualIsGuardian,
+      canAccessAdmin: actualIsGuardian,
+      canManageUsers: actualIsGuardian,
+      canCreateOracle: actualIsGuardian,
+      canAccessObservatory: actualIsGuardian
     });
   }
   
@@ -461,10 +467,10 @@ export function useRoleNavigation() {
       case 'guardian':
         return [
           ...baseItems,
-          { label: '观星台', href: '/admin/observatory', icon: 'eye' },
-          { label: '神谕管理', href: '/admin/oracles', icon: 'message-square' },
-          { label: '用户管理', href: '/admin/users', icon: 'users' },
           { label: '管理控制台', href: '/admin', icon: 'shield' },
+          { label: '用户管理', href: '/admin/users', icon: 'users' },
+          { label: '神谕管理', href: '/admin/oracles', icon: 'message-square' },
+          { label: '观星台', href: '/admin/observatory', icon: 'eye' },
         ];
       
       case 'luminary':
