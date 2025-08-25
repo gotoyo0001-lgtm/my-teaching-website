@@ -75,10 +75,24 @@ export default function LoginPage() {
   }, [user, isLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('👆 点击登录按钮 - 事件开始处理');
     e.preventDefault();
-    console.log('🔄 表单提交触发:', { email, password: '••••••', isSignUp });
+    console.log('🔄 表单提交触发:', { 
+      email, 
+      password: '••••••', 
+      isSignUp, 
+      isSubmitting, 
+      hasErrors: Object.keys(fieldErrors).length > 0 
+    });
+    
+    // 防止重复提交
+    if (isSubmitting) {
+      console.warn('⏸️ 正在提交中，忽略重复点击');
+      return;
+    }
     
     // 验证表单
+    console.log('🔍 开始表单验证...');
     if (!validateForm()) {
       console.warn('⚠️ 表单验证失败', fieldErrors);
       return;
@@ -258,6 +272,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isSubmitting}
+              onClick={() => console.log('👆 登录按钮被点击!')}
               className="cosmic-button w-full disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
