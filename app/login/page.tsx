@@ -76,13 +76,15 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🔄 表单提交触发:', { email, password: '••••••', isSignUp });
     
     // 验证表单
     if (!validateForm()) {
-      console.warn('⚠️ 表单验证失败');
+      console.warn('⚠️ 表单验证失败', fieldErrors);
       return;
     }
     
+    console.log('✅ 表单验证通过，开始提交...');
     setIsSubmitting(true);
     setError(null);
     setSuccess(null);
@@ -102,10 +104,14 @@ export default function LoginPage() {
       } else {
         // 登入现有遥行者
         console.log('🚀 开始登录用户:', { email });
-        const { error } = await signIn(email, password);
-        if (error) {
-          console.error('❌ 登录失败:', error);
-          setError('登入失败：' + error.message);
+        console.log('🔗 调用 signIn 函数...');
+        
+        const signInResult = await signIn(email, password);
+        console.log('🔍 signIn 结果:', signInResult);
+        
+        if (signInResult.error) {
+          console.error('❌ 登录失败:', signInResult.error);
+          setError('登入失败：' + signInResult.error.message);
         } else {
           console.log('✅ 登录成功，准备跳转');
           // 成功后由认证上下文自动处理跳转
@@ -116,6 +122,7 @@ export default function LoginPage() {
       console.error('❌ 认证过程中发生错误:', error);
       setError('发生了未知错误，请稍后再试');
     } finally {
+      console.log('🏁 提交流程结束，重置状态');
       setIsSubmitting(false);
     }
   };

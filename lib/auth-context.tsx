@@ -136,10 +136,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 登录
   const signIn = async (email: string, password: string): Promise<{ error: AuthError | Error | null }> => {
     try {
-      const { error } = await safeAuth.signIn(email, password);
-      return { error };
+      console.log('🔐 认证上下文：开始 signIn 调用:', { email });
+      console.log('🔗 调用 safeAuth.signIn...');
+      
+      const result = await safeAuth.signIn(email, password);
+      console.log('📋 safeAuth.signIn 结果:', result);
+      
+      if (result.error) {
+        console.error('❌ safeAuth.signIn 返回错误:', result.error);
+      } else {
+        console.log('✅ safeAuth.signIn 成功');
+      }
+      
+      return { error: result.error };
     } catch (err) {
-      console.error('登录时发生错误:', err);
+      console.error('💥 signIn 函数捕获异常:', err);
       return { error: err as Error };
     }
   };

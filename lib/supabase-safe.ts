@@ -221,7 +221,19 @@ export const safeDb = {
 // 认证操作
 export const safeAuth = {
   async signIn(email: string, password: string) {
-    return supabaseSafe.auth.signInWithPassword({ email, password });
+    console.log('📶 Supabase signIn 开始:', { email });
+    try {
+      const result = await supabaseSafe.auth.signInWithPassword({ email, password });
+      console.log('📶 Supabase signIn 结果:', {
+        error: result.error,
+        hasUser: !!result.data?.user,
+        hasSession: !!result.data?.session
+      });
+      return result;
+    } catch (error) {
+      console.error('💥 Supabase signIn 异常:', error);
+      throw error;
+    }
   },
 
   async signUp(email: string, password: string) {
