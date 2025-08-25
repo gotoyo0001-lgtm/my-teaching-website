@@ -22,7 +22,7 @@ type Category = Database['public']['Tables']['categories']['Row'];
 
 export default function ConstellationPage() {
   const router = useRouter();
-  const { user, profile, isLoading } = useAuth();
+  const { user, profile, isLoading, session } = useAuth();
   
   const [courses, setCourses] = useState<Course[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -65,7 +65,7 @@ export default function ConstellationPage() {
           // 直接查询分类
           fetch('/api/categories', {
             headers: {
-              'Authorization': `Bearer ${user.access_token || ''}`
+              'Authorization': `Bearer ${session?.access_token || ''}`
             }
           }).then(r => r.json()).catch(err => {
             console.error('加载分类失败:', err);
