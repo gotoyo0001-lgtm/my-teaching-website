@@ -75,16 +75,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }
 
-  // 获取用户档案 - 优化性能和错误处理，增加缓存机制
+  // 获取用户档案 - 优化性能和错误处理，减少超时时间
   const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
       if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
         console.log('🔍 正在获取用户档案, userId:', userId);
       }
       
-      // 使用更直接的查询方式，并设置超时
+      // 使用更直接的查询方式，并设置较短的超时时间
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
+      const timeoutId = setTimeout(() => controller.abort(), 2000); // 减少到2秒超时
       
       try {
         const { data, error } = await supabaseSafe
@@ -111,9 +111,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (abortError) {
         clearTimeout(timeoutId);
         if (abortError.name === 'AbortError') {
-          console.warn('⚠️ 用户档案查询超时，将在后台继续尝试');
-          // 超时后返回null，但不阻塞页面加载
-          return null;
+          console.warn('⚠️ 用户档案查询超时（2秒），使用缓存或默认值');
+          // 超时后返回基本用户信息，允许用户正常登录
+          return {
+            id: userId,
+            username: 'loading...',
+            display_name: '加载中...',
+            role: 'voyager', // 默认角色
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          } as UserProfile;
         }
         throw abortError;
       }
@@ -121,7 +128,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (typeof window !== 'undefined') {
         console.error('❌ 获取用户档案时发生错误:', error);
       }
-      return null;
+      // 即使出错也返回基本信息，确保用户能正常登录
+      return {
+        id: userId,
+        username: 'user_' + userId.slice(0, 8),
+        display_name: '遥行者',
+        role: 'voyager',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      } as UserProfile;
     }
   };
 
@@ -216,7 +231,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // 监听认证状态变化 - 优化性能
+  // 监听认证状态变化 - 高度优化性能，非阻塞式加载
   useEffect(() => {
     let mounted = true;
     
@@ -225,32 +240,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } = safeAuth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
       
+      console.log('🔄 认证状态变化:', event, '用户:', session?.user?.email);
+      
       setSession(session);
       setUser(session?.user || null);
 
       if (session?.user) {
-        // 用户登录，异步获取档案，不阻塞UI
-        const profileData = await fetchUserProfile(session.user.id);
-        if (mounted) {
-          setProfile(profileData);
-        }
+        console.log('🚀 用户登录成功，异步获取档案...');
         
-        // 异步更新最后访问时间，不等待结果
-        if (profileData) {
-          const updateData = {
-            last_seen_at: new Date().toISOString()
-          };
-          
-          safeDb.profiles.update(session.user.id, updateData).catch(err => {
-            console.warn('更新最后访问时间失败:', err);
+        // 立即设置加载完成，不等待档案加载
+        setIsLoading(false);
+        
+        // 异步获取档案，不阻塞UI
+        fetchUserProfile(session.user.id)
+          .then(profileData => {
+            if (mounted && profileData) {
+              console.log('✅ 用户档案加载完成:', profileData.display_name);
+              setProfile(profileData);
+              
+              // 异步更新最后访问时间，不等待结果
+              const updateData = {
+                last_seen_at: new Date().toISOString()
+              };
+              
+              safeDb.profiles.update(session.user.id, updateData).catch(err => {
+                console.warn('更新最后访问时间失败:', err);
+              });
+            }
+          })
+          .catch(err => {
+            console.warn('获取用户档案失败，使用默认值:', err);
+            if (mounted) {
+              // 即使档案获取失败，也设置一个基本档案
+              setProfile({
+                id: session.user.id,
+                username: 'user_' + session.user.id.slice(0, 8),
+                display_name: '遥行者',
+                role: 'voyager',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              } as UserProfile);
+            }
           });
-        }
       } else {
         // 用户登出
+        console.log('🚪 用户登出');
         setProfile(null);
+        setIsLoading(false);
       }
-
-      setIsLoading(false);
     });
 
     return () => {

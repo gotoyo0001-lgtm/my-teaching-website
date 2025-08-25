@@ -103,6 +103,15 @@ export default function LoginPage() {
     setError(null);
     setSuccess(null);
 
+    // 设置一个总体超时保护（10秒）
+    const timeoutId = setTimeout(() => {
+      if (isSubmitting) {
+        console.warn('⏰ 登录超时，自动取消');
+        setIsSubmitting(false);
+        setError('登录超时，请检查网络连接后重试');
+      }
+    }, 10000);
+
     try {
       if (isSignUp) {
         // 注册新遥行者
@@ -128,14 +137,19 @@ export default function LoginPage() {
           setError('登入失败：' + signInResult.error.message);
         } else {
           console.log('✅ 登录成功，准备跳转');
-          // 成功后由认证上下文自动处理跳转
           setSuccess('登录成功！正在进入宇宙...');
+          
+          // 立即跳转，不等待档案加载
+          setTimeout(() => {
+            router.push('/constellation');
+          }, 1000);
         }
       }
     } catch (error) {
       console.error('❌ 认证过程中发生错误:', error);
       setError('发生了未知错误，请稍后再试');
     } finally {
+      clearTimeout(timeoutId);
       console.log('🏁 提交流程结束，重置状态');
       setIsSubmitting(false);
     }
