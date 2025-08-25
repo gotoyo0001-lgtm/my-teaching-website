@@ -90,6 +90,7 @@ END $$;
 DO $$
 DECLARE
     test_count INTEGER;
+    guardian_record RECORD; -- 声明记录变量
 BEGIN
     -- 测试是否可以查询profiles表
     SELECT COUNT(*) INTO test_count
